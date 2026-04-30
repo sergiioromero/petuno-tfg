@@ -5,7 +5,11 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Permite ejecución manual
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write  # Permite ejecución manual
 
 jobs:
   build:
