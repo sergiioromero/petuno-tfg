@@ -1,0 +1,130 @@
+# ===== FLUTTER / DART =====
+build/
+*.dart.js
+*.dart.js.map
+.dart_tool/
+.pub/
+pubspec.lock
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+lib/generated_plugin_registrant.dart
+
+# ===== IDE / EDITOR =====
+.idea/
+*.iml
+*.iws
+out/
+
+.vscode/settings.json
+.vscode/.flutter-plugins
+.vscode/.flutter-plugins-dependencies
+
+ios/.generated/
+ios/Flutter/App.framework/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/Ephemeral/
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/project.xcworkspace/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcodeproj/project.pbxproj
+
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/gradle/wrapper/gradle-wrapper.jar
+
+# ===== OS / SYSTEM =====
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+.DS_Store
+.AppleDouble
+.LSOverride
+.icon
+
+*~
+
+# ===== DOCUMENTATION (IGNORAR TODO) =====
+# Markdown
+*.md
+!README.md
+
+# PDF
+*.pdf
+
+# Word
+*.docx
+*.doc
+
+# PowerPoint
+*.pptx
+*.ppt
+
+# Excel
+*.xlsx
+
+# ===== PYTHON (SCRIPTS DE GENERACION) =====
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+pip-log.txt
+
+md_to_pdf.py
+md_to_docx.py
+create_ppt.py
+
+# ===== IMAGENES (CARPETA ORIGINAL) =====
+WhatsApp Unknown 2026-04-25 at 18.55.39/
+
+# ===== DOCUMENTACION DEL PROYECTO (IGNORAR) =====
+MEMORIA_*.md
+MEMORIA_*.pdf
+MEMORIA_*.docx
+VERIFICACION_RUBRICA.md
+SECCIONES_NUEVAS.md
+Petuno_Presentacion.pptx
+Indicaciones memoria proyecto-20260428/
+Ejemplos-20260428/
+2026-03-24-rubrica-DAM_v4-Nueva.xlsx
+
+# ===== LOGS =====
+*.log
+flutter_log.txt
+firebase_debug.log
+
+# ===== SECRETS (IMPORTANTE NO SUBIR) =====
+.env
+*.key
+*.pem
+google-services.json
+GoogleService-Info.plist
+firebase.json
+firestore.key
+*.jks
+*.keystore
+
+# ===== TEMP =====
+*.tmp
+*.temp
+.Trash-*/
+
+# ===== KEEP ONLY ESSENTIAL (FLUTTER) =====
+# Se mantienen automáticamente (no están en la lista de ignore):
+# - lib/
+# - assets/
+# - test/
+# - pubspec.yaml
+# - analysis_options.yaml
+# - android/
+# - ios/
+# - web/ (si existe)
+# - README.md
+# - .gitignore
