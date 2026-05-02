@@ -26,19 +26,22 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
     
+    - name: Remove cached Flutter
+      run: |
+        rm -rf /opt/hostedtoolcache/flutter
+        echo "Cache cleaned"
+    
     - name: Setup Flutter 3.29.0
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.29.0'
     
-    - name: Fix Dart SDK PATH
+    - name: Verify Flutter/Dart versions
       run: |
-        echo "Current DART_HOME: $DART_HOME"
-        echo "Current PATH: $PATH"
-        # Add Flutter's Dart SDK to PATH explicitly
-        export PATH="/opt/hostedtoolcache/flutter/3.29.0-x64/flutter/bin/cache/dart-sdk/bin:$PATH"
-        echo "New PATH: $PATH"
+        flutter --version
         dart --version
+        which dart
+        dart --version 2>/dev/null || echo "Dart not in PATH"
     
     - name: Get dependencies
       run: flutter pub get
@@ -61,7 +64,7 @@ jobs:
         tag_name: v1.0.${{ github.run_number }}
         name: Petuno Release v1.0.${{ github.run_number }}
         body: |
-          APK generado automáticamente para Petuno
+          APK generado automaticamente para Petuno
           - Build #${{ github.run_number }}
           - Commit: ${{ github.sha }}
         draft: false
