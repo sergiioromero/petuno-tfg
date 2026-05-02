@@ -15,25 +15,47 @@ jobs:
   build:
     name: Build Flutter APK
     runs-on: ubuntu-latest
-    container:
-      image: cirrusci/flutter:3.29.0
-      env:
-        PUB_CACHE: /tmp/pub-cache
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Verify Flutter/Dart versions
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    
+    - name: Setup Flutter 3.29.0
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.29.0'
+    
+    - name: Fix PATH (CRITICAL FIX)
       run: |
+        echo "=== Fixing PATH ==="
+        # The ACTUAL Flutter installation path
+        FLUTTER_PATH="/opt/hostedtoolcache/flutter/stable-3.29.0-x64/flutter"
+        DART_SDK_PATH="$FLUTTER_PATH/bin/cache/dart-sdk/bin"
+        
+        # Export the CORRECT paths
+        echo "FLUTTER_ROOT=$FLUTTER_PATH" >> $GITHUB_ENV
+        echo "$FLUTTER_PATH/bin" >> $GITHUB_PATH
+        echo "$DART_SDK_PATH" >> $GITHUB_PATH
+        
+        # Verify
+        which flutter
         flutter --version
+        which dart
         dart --version
     
-    - name: Get dependencies
-      run: flutter pub get
+    - name: Get dependencies (using full path)
+      run: |
+        flutter pub get
     
     - name: Build APK release
-      run: flutter build apk --release
+      run: |
+        flutter build apk --release
     
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
@@ -50,7 +72,7 @@ jobs:
         tag_name: v1.0.${{ github.run_number }}
         name: Petuno Release v1.0.${{ github.run_number }}
         body: |
-          APK generado automáticamente para Petuno
+          APK generado automaticamente para Petuno.
           - Build #${{ github.run_number }}
           - Commit: ${{ github.sha }}
         draft: false
