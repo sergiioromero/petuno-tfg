@@ -26,19 +26,14 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
     
-    - name: Install Flutter 3.29.0
+    - name: Install Flutter 3.29.0 (correct tag)
       run: |
-        git clone https://github.com/flutter/flutter.git -b 3.29.0 --depth 1 /opt/flutter
+        git clone https://github.com/flutter/flutter.git --branch v3.29.0 --depth 1 /opt/flutter
         echo "FLUTTER_ROOT=/opt/flutter" >> $GITHUB_ENV
         echo "/opt/flutter/bin" >> $GITHUB_PATH
         echo "/opt/flutter/bin/cache/dart-sdk/bin" >> $GITHUB_PATH
         /opt/flutter/bin/flutter --version
         /opt/flutter/bin/cache/dart-sdk/bin/dart --version
-    
-    - name: Verify Flutter version
-      run: |
-        flutter --version
-        dart --version
     
     - name: Get dependencies
       run: flutter pub get
