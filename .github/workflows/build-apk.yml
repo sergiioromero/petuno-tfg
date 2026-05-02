@@ -27,14 +27,17 @@ jobs:
         java-version: '17'
     
     - name: Setup Flutter 3.29.0
-      uses: flutter-actions/setup-flutter@v2
+      uses: subosito/flutter-action@v2
       with:
-        version: '3.29.0'
-        channel: 'stable'
+        flutter-version: '3.29.0'
     
-    - name: Verify Flutter version
+    - name: Fix Dart SDK PATH
       run: |
-        flutter --version
+        echo "Current DART_HOME: $DART_HOME"
+        echo "Current PATH: $PATH"
+        # Add Flutter's Dart SDK to PATH explicitly
+        export PATH="/opt/hostedtoolcache/flutter/3.29.0-x64/flutter/bin/cache/dart-sdk/bin:$PATH"
+        echo "New PATH: $PATH"
         dart --version
     
     - name: Get dependencies
