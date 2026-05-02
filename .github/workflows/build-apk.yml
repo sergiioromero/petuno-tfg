@@ -26,10 +26,16 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
     
-    - name: Setup Flutter (stable channel)
-      uses: subosito/flutter-action@v2
+    - name: Setup Flutter 3.29.0
+      uses: flutter-actions/setup-flutter@v2
       with:
+        version: '3.29.0'
         channel: 'stable'
+    
+    - name: Verify Flutter version
+      run: |
+        flutter --version
+        dart --version
     
     - name: Get dependencies
       run: flutter pub get
