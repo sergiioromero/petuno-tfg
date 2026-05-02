@@ -15,33 +15,19 @@ jobs:
   build:
     name: Build Flutter APK
     runs-on: ubuntu-latest
+    container:
+      image: cirrusci/flutter:3.29.0
+      env:
+        PUB_CACHE: /tmp/pub-cache
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '17'
-    
-    - name: Remove cached Flutter
-      run: |
-        rm -rf /opt/hostedtoolcache/flutter
-        echo "Cache cleaned"
-    
-    - name: Setup Flutter 3.29.0
-      uses: subosito/flutter-action@v2
-      with:
-        flutter-version: '3.29.0'
-    
     - name: Verify Flutter/Dart versions
       run: |
         flutter --version
         dart --version
-        which dart
-        dart --version 2>/dev/null || echo "Dart not in PATH"
     
     - name: Get dependencies
       run: flutter pub get
@@ -64,7 +50,7 @@ jobs:
         tag_name: v1.0.${{ github.run_number }}
         name: Petuno Release v1.0.${{ github.run_number }}
         body: |
-          APK generado automaticamente para Petuno
+          APK generado automáticamente para Petuno
           - Build #${{ github.run_number }}
           - Commit: ${{ github.sha }}
         draft: false
