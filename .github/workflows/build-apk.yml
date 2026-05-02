@@ -7,6 +7,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   build:
     name: Build Flutter APK
@@ -23,10 +27,10 @@ jobs:
         java-version: '17'
     
     - name: Setup Flutter
-      uses: subosito/flutter-action@v2
+      uses: flutter-actions/setup-flutter@v2
       with:
-        flutter-version: '3.29.0'
         channel: 'stable'
+        version: '3.29.0'
     
     - name: Get dependencies
       run: flutter pub get
