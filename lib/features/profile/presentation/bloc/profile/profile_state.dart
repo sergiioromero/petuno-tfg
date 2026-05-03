@@ -1,0 +1,38 @@
+import 'package:equatable/equatable.dart';
+import '../../../domain/entities/user.dart';
+
+abstract class ProfileState extends Equatable {
+  const ProfileState();
+
+  @override
+  List<Object?> get props => [];
+}
+
+class ProfileInitial extends ProfileState {}
+
+class ProfileLoading extends ProfileState {}
+
+/// Estado mientras se sube la foto — mantiene el perfil visible en la UI
+class ProfilePhotoUploading extends ProfileState {}
+
+class ProfileLoaded extends ProfileState {
+  final User user;
+
+  const ProfileLoaded(this.user);
+
+  @override
+  List<Object?> get props => [user];
+}
+
+class ProfileError extends ProfileState {
+  final String message;
+
+  const ProfileError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// El documento del usuario no existe en Firestore.
+/// El AuthWrapper reaccionará cerrando sesión.
+class ProfileNotFound extends ProfileState {}

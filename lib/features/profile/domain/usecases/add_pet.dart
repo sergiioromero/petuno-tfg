@@ -1,0 +1,23 @@
+import 'package:dartz/dartz.dart';
+import '../../../../core/error/failures.dart';
+import '../../../../core/usecases/usecase.dart';
+import '../entities/pet.dart';
+import '../repositories/pet_repository.dart';
+
+class AddPet implements UseCase<void, AddPetParams> {
+  final PetRepository repository;
+
+  AddPet(this.repository);
+
+  @override
+  Future<Either<Failure, void>> call(AddPetParams params) async {
+    return await repository.addPet(params.uid, params.pet);
+  }
+}
+
+class AddPetParams {
+  final String uid;
+  final Pet pet;
+
+  AddPetParams({required this.uid, required this.pet});
+}
