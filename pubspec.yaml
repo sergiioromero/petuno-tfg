@@ -41,7 +41,10 @@ dependencies:
   flutter_bloc: ^9.1.1
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+<<<<<<< HEAD
   hive_generator: ^2.0.1
+=======
+>>>>>>> dca1d57 (Fix menores de foto de perfil y chats)
   http: ^1.6.0
   image_picker: ^1.2.1
   provider: ^6.1.5+1
@@ -53,6 +56,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutterfire_cli: ^1.3.1
+<<<<<<< HEAD
+=======
+  hive_generator: ^2.0.1
+>>>>>>> dca1d57 (Fix menores de foto de perfil y chats)
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
