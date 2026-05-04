@@ -24,11 +24,7 @@ android {
         applicationId = "com.example.petuno"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-<<<<<<< HEAD
         minSdk = 23
-=======
-        minSdk = flutter.minSdkVersion
->>>>>>> dca1d57 (Fix menores de foto de perfil y chats)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
