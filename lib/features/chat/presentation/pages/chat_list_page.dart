@@ -5,82 +5,20 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../../../../core/theme/app_theme.dart';
 import '../../../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../../../features/auth/presentation/bloc/auth_state.dart';
+import '../../data/models/chat_model.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
-import '../bloc/chat_state.dart';
 import 'chat_conversation_page.dart';
 
-class ChatListPage extends StatefulWidget {
+class ChatListPage extends StatelessWidget {
   const ChatListPage({super.key});
 
   @override
-  State<ChatListPage> createState() => _ChatListPageState();
-}
-
-class _ChatListPageState extends State<ChatListPage> {
-  @override
-  void initState() {
-    super.initState();
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      context.read<ChatBloc>().add(WatchChats(authState.user.uid));
-    }
-  }
-
-  String get _currentUid {
-    final authState = context.read<AuthBloc>().state;
-    return authState is AuthAuthenticated ? authState.user.uid : '';
-  }
-
-  void _openNewChatSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => BlocProvider.value(
-        value: context.read<ChatBloc>(),
-        child: _NewChatSheet(currentUid: _currentUid),
-      ),
-    ).then((_) {
-      // Al cerrar el sheet restauramos el estado de chats
-      if (mounted) {
-        context.read<ChatBloc>().add(RestoreChats());
-      }
-    });
-  }
-
-  void _openConversation({
-    required String chatId,
-    required String otherUserId,
-    required String otherUserName,
-    required String? otherUserPhotoURL,
-    required String otherUserAvatarEmoji,
-  }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<ChatBloc>(),
-          child: ChatConversationPage(
-            chatId: chatId,
-            otherUserId: otherUserId,
-            otherUserName: otherUserName,
-            otherUserPhotoURL: otherUserPhotoURL,
-            otherUserAvatarEmoji: otherUserAvatarEmoji,
-            currentUid: _currentUid,
-          ),
-        ),
-      ),
-    ).then((_) {
-      // Al volver de la conversación, restauramos la lista de chats
-      if (mounted) {
-        context.read<ChatBloc>().add(RestoreChats());
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final currentUid =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
       appBar: AppBar(
@@ -97,69 +35,122 @@ class _ChatListPageState extends State<ChatListPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _openNewChatSheet,
+        onPressed: () => _openNewChatSheet(context, currentUid),
         backgroundColor: AppTheme.primaryPink,
         child: const Icon(Icons.edit_rounded, color: Colors.white),
       ),
-      body: BlocBuilder<ChatBloc, ChatState>(
-        builder: (context, state) {
-          if (state is ChatLoading) {
+      // StreamBuilder directo a Firestore — siempre actualizado,
+      // independiente del estado del ChatBloc
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('chats')
+            .where('participantIds', arrayContains: currentUid)
+            .orderBy('lastMessageAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: CircularProgressIndicator(color: AppTheme.primaryPink),
             );
           }
 
-          if (state is ChatError) {
+          if (snapshot.hasError) {
             return Center(
               child: Text(
-                'Error: ${state.message}',
+                'Error al cargar mensajes',
                 style: TextStyle(color: AppTheme.textSecondary(context)),
               ),
             );
           }
 
-          if (state is ChatsLoaded) {
-            if (state.chats.isEmpty) {
-              return _buildEmptyState(context);
-            }
+          final docs = snapshot.data?.docs ?? [];
 
-            return ListView.separated(
-              itemCount: state.chats.length,
-              separatorBuilder: (_, __) => Divider(
-                height: 1,
-                color: AppTheme.borderColor(context),
-                indent: 80,
-              ),
-              itemBuilder: (context, index) {
-                final chat = state.chats[index];
-                final otherUserId = chat.participantIds
-                    .firstWhere((id) => id != _currentUid, orElse: () => '');
-                final unread = chat.unreadCount[_currentUid] ?? 0;
+          if (docs.isEmpty) {
+            return _buildEmptyState(context);
+          }
 
-                return _ChatTile(
-                  chatId: chat.id,
-                  otherUserId: otherUserId,
-                  lastMessage: chat.lastMessage,
-                  lastMessageAt: chat.lastMessageAt,
-                  unreadCount: unread,
-                  isLastMessageMine: chat.lastMessageSenderId == _currentUid,
-                  currentUid: _currentUid,
-                  onTap: (name, photoURL, avatarEmoji) => _openConversation(
+          final chats = docs
+              .map((doc) => ChatModel.fromFirestore(doc))
+              .toList();
+
+          return ListView.separated(
+            itemCount: chats.length,
+            separatorBuilder: (_, __) => Divider(
+              height: 1,
+              color: AppTheme.borderColor(context),
+              indent: 80,
+            ),
+            itemBuilder: (context, index) {
+              final chat = chats[index];
+              final otherUserId = chat.participantIds
+                  .firstWhere((id) => id != currentUid, orElse: () => '');
+              final unread = chat.unreadCount[currentUid] ?? 0;
+
+              return _ChatTile(
+                chatId: chat.id,
+                otherUserId: otherUserId,
+                lastMessage: chat.lastMessage,
+                lastMessageAt: chat.lastMessageAt,
+                unreadCount: unread,
+                isLastMessageMine: chat.lastMessageSenderId == currentUid,
+                currentUid: currentUid,
+                onTap: (name, photoURL, avatarEmoji) {
+                  _openConversation(
+                    context: context,
                     chatId: chat.id,
                     otherUserId: otherUserId,
                     otherUserName: name,
                     otherUserPhotoURL: photoURL,
                     otherUserAvatarEmoji: avatarEmoji,
-                  ),
-                );
-              },
-            );
-          }
-
-          return _buildEmptyState(context);
+                    currentUid: currentUid,
+                  );
+                },
+              );
+            },
+          );
         },
       ),
     );
+  }
+
+  void _openNewChatSheet(BuildContext context, String currentUid) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => BlocProvider.value(
+        value: context.read<ChatBloc>(),
+        child: _NewChatSheet(currentUid: currentUid),
+      ),
+    );
+  }
+
+  void _openConversation({
+    required BuildContext context,
+    required String chatId,
+    required String otherUserId,
+    required String otherUserName,
+    required String? otherUserPhotoURL,
+    required String otherUserAvatarEmoji,
+    required String currentUid,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<ChatBloc>(),
+          child: ChatConversationPage(
+            chatId: chatId,
+            otherUserId: otherUserId,
+            otherUserName: otherUserName,
+            otherUserPhotoURL: otherUserPhotoURL,
+            otherUserAvatarEmoji: otherUserAvatarEmoji,
+            currentUid: currentUid,
+          ),
+        ),
+      ),
+    );
+    // No hace falta RestoreChats — el StreamBuilder siempre está vivo
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -203,11 +194,10 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 }
 
-// ─── Bottom sheet para buscar usuario y abrir chat ────────────────────────────
+// ─── Bottom sheet para buscar usuario y abrir chat ───────────────────────────
 
 class _NewChatSheet extends StatefulWidget {
   final String currentUid;
-
   const _NewChatSheet({required this.currentUid});
 
   @override
@@ -230,9 +220,7 @@ class _NewChatSheetState extends State<_NewChatSheet> {
       setState(() => _results = []);
       return;
     }
-
     setState(() => _loading = true);
-
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -264,7 +252,7 @@ class _NewChatSheetState extends State<_NewChatSheet> {
     final sorted = [widget.currentUid, otherUid]..sort();
     final chatId = '${sorted[0]}_${sorted[1]}';
 
-    Navigator.pop(context); // cierra el sheet
+    Navigator.pop(context);
 
     Navigator.push(
       context,
@@ -281,12 +269,7 @@ class _NewChatSheetState extends State<_NewChatSheet> {
           ),
         ),
       ),
-    ).then((_) {
-      // Al volver restauramos la lista de chats
-      if (context.mounted) {
-        context.read<ChatBloc>().add(RestoreChats());
-      }
-    });
+    );
   }
 
   @override
@@ -375,7 +358,6 @@ class _NewChatSheetState extends State<_NewChatSheet> {
                               final user = _results[index];
                               final photoURL = user['photoURL'] as String?;
                               final avatarEmoji = user['avatarEmoji'] ?? '👤';
-
                               return ListTile(
                                 contentPadding: const EdgeInsets.symmetric(
                                     horizontal: 20, vertical: 4),
@@ -412,7 +394,7 @@ class _NewChatSheetState extends State<_NewChatSheet> {
   }
 }
 
-// ─── Chat tile ────────────────────────────────────────────────────────────────
+// ─── Chat tile ───────────────────────────────────────────────────────────────
 
 class _ChatTile extends StatelessWidget {
   final String chatId;
@@ -459,17 +441,12 @@ class _ChatTile extends StatelessWidget {
         return ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          leading: _Avatar(
-            photoURL: photoURL,
-            avatarEmoji: avatarEmoji,
-            size: 52,
-          ),
+          leading: _Avatar(photoURL: photoURL, avatarEmoji: avatarEmoji, size: 52),
           title: Text(
             name,
             style: TextStyle(
               fontSize: 15,
-              fontWeight:
-                  unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
+              fontWeight: unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
               color: AppTheme.textPrimary(context),
             ),
           ),
@@ -478,11 +455,8 @@ class _ChatTile extends StatelessWidget {
               if (isLastMessageMine)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: Icon(
-                    Icons.done_all_rounded,
-                    size: 14,
-                    color: AppTheme.primaryPink,
-                  ),
+                  child: Icon(Icons.done_all_rounded,
+                      size: 14, color: AppTheme.primaryPink),
                 ),
               Expanded(
                 child: Text(
@@ -522,8 +496,8 @@ class _ChatTile extends StatelessWidget {
               if (unreadCount > 0) ...[
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryPink,
                     borderRadius: BorderRadius.circular(10),
@@ -547,7 +521,7 @@ class _ChatTile extends StatelessWidget {
   }
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
+// ─── Avatar ──────────────────────────────────────────────────────────────────
 
 class _Avatar extends StatelessWidget {
   final String? photoURL;
@@ -568,12 +542,10 @@ class _Avatar extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: photoURL == null
-            ? LinearGradient(
-                colors: [
-                  AppTheme.primaryPink,
-                  AppTheme.primaryPink.withOpacity(0.6),
-                ],
-              )
+            ? LinearGradient(colors: [
+                AppTheme.primaryPink,
+                AppTheme.primaryPink.withOpacity(0.6),
+              ])
             : null,
       ),
       child: ClipOval(
@@ -582,13 +554,13 @@ class _Avatar extends StatelessWidget {
                 photoURL!,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Center(
-                  child: Text(avatarEmoji,
-                      style: TextStyle(fontSize: size * 0.45)),
+                  child:
+                      Text(avatarEmoji, style: TextStyle(fontSize: size * 0.45)),
                 ),
               )
             : Center(
-                child: Text(avatarEmoji,
-                    style: TextStyle(fontSize: size * 0.45)),
+                child:
+                    Text(avatarEmoji, style: TextStyle(fontSize: size * 0.45)),
               ),
       ),
     );

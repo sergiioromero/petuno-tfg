@@ -1,11 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../../../../core/theme/app_theme.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
-import '../bloc/chat_state.dart';
-import '../../domain/entities/message.dart';
+import '../../data/models/message_model.dart';
 
 class ChatConversationPage extends StatefulWidget {
   final String chatId;
@@ -37,6 +37,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   @override
   void initState() {
     super.initState();
+    // Aseguramos que el chat existe en Firestore antes de escuchar mensajes
     context.read<ChatBloc>().add(WatchMessages(
           chatId: widget.chatId,
           currentUserId: widget.currentUid,
@@ -89,60 +90,71 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       body: Column(
         children: [
           Expanded(
-            child: BlocConsumer<ChatBloc, ChatState>(
-              listener: (context, state) {
-                if (state is MessagesLoaded) {
-                  _scrollToBottom();
-                }
-              },
-              builder: (context, state) {
-                if (state is ChatLoading) {
+            // StreamBuilder directo a Firestore — mensajes siempre en tiempo real
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('chats')
+                  .doc(widget.chatId)
+                  .collection('messages')
+                  .orderBy('createdAt', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
                         color: AppTheme.primaryPink),
                   );
                 }
 
-                if (state is MessagesLoaded) {
-                  if (state.messages.isEmpty) {
-                    return _buildEmptyConversation(context);
-                  }
+                final docs = snapshot.data?.docs ?? [];
 
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    itemCount: state.messages.length,
-                    itemBuilder: (context, index) {
-                      final message = state.messages[index];
-                      final isMe = message.senderId == widget.currentUid;
-                      final showDate = index == 0 ||
-                          !_isSameDay(
-                            state.messages[index - 1].createdAt,
-                            message.createdAt,
-                          );
-                      final showAvatar = !isMe &&
-                          (index == state.messages.length - 1 ||
-                              state.messages[index + 1].senderId !=
-                                  message.senderId);
-
-                      return Column(
-                        children: [
-                          if (showDate) _DateDivider(date: message.createdAt),
-                          _MessageBubble(
-                            message: message,
-                            isMe: isMe,
-                            showAvatar: showAvatar,
-                            otherUserPhotoURL: widget.otherUserPhotoURL,
-                            otherUserAvatarEmoji: widget.otherUserAvatarEmoji,
-                          ),
-                        ],
-                      );
-                    },
-                  );
+                if (docs.isEmpty) {
+                  return _buildEmptyConversation(context);
                 }
 
-                return const SizedBox.shrink();
+                final messages = docs
+                    .map((doc) =>
+                        MessageModel.fromFirestore(doc, widget.chatId))
+                    .toList();
+
+                // Scroll al fondo cuando llegan mensajes nuevos
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _scrollToBottom();
+                });
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 12),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isMe = message.senderId == widget.currentUid;
+                    final showDate = index == 0 ||
+                        !_isSameDay(
+                          messages[index - 1].createdAt,
+                          message.createdAt,
+                        );
+                    final showAvatar = !isMe &&
+                        (index == messages.length - 1 ||
+                            messages[index + 1].senderId !=
+                                message.senderId);
+
+                    return Column(
+                      children: [
+                        if (showDate)
+                          _DateDivider(date: message.createdAt),
+                        _MessageBubble(
+                          message: message,
+                          isMe: isMe,
+                          showAvatar: showAvatar,
+                          otherUserPhotoURL: widget.otherUserPhotoURL,
+                          otherUserAvatarEmoji: widget.otherUserAvatarEmoji,
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -192,8 +204,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       ),
       decoration: BoxDecoration(
         color: AppTheme.cardColor(context),
-        border: Border(
-            top: BorderSide(color: AppTheme.borderColor(context))),
+        border:
+            Border(top: BorderSide(color: AppTheme.borderColor(context))),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -262,10 +274,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            '👋',
-            style: const TextStyle(fontSize: 48),
-          ),
+          const Text('👋', style: TextStyle(fontSize: 48)),
           const SizedBox(height: 12),
           Text(
             '¡Di hola a ${widget.otherUserName}!',
@@ -277,7 +286,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Sois el primero en escribir',
+            'Sois los primeros en escribir',
             style: TextStyle(
               fontSize: 13,
               color: AppTheme.textSecondary(context),
@@ -293,8 +302,10 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   }
 }
 
+// ─── Widgets ─────────────────────────────────────────────────────────────────
+
 class _MessageBubble extends StatelessWidget {
-  final Message message;
+  final MessageModel message;
   final bool isMe;
   final bool showAvatar;
   final String? otherUserPhotoURL;
@@ -319,7 +330,6 @@ class _MessageBubble extends StatelessWidget {
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Avatar del otro usuario
           if (!isMe)
             Padding(
               padding: const EdgeInsets.only(right: 6),
@@ -331,14 +341,13 @@ class _MessageBubble extends StatelessWidget {
                     )
                   : const SizedBox(width: 28),
             ),
-
-          // Burbuja
           Flexible(
             child: Container(
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.72,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
               decoration: BoxDecoration(
                 color: isMe
                     ? AppTheme.primaryPink
@@ -395,7 +404,6 @@ class _MessageBubble extends StatelessWidget {
 
 class _DateDivider extends StatelessWidget {
   final DateTime date;
-
   const _DateDivider({required this.date});
 
   @override
@@ -418,8 +426,7 @@ class _DateDivider extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Row(
         children: [
-          Expanded(
-              child: Divider(color: AppTheme.borderColor(context))),
+          Expanded(child: Divider(color: AppTheme.borderColor(context))),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
@@ -431,8 +438,7 @@ class _DateDivider extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-              child: Divider(color: AppTheme.borderColor(context))),
+          Expanded(child: Divider(color: AppTheme.borderColor(context))),
         ],
       ),
     );
