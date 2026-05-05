@@ -45,7 +45,7 @@ dependencies:
   http: ^1.6.0
   image_picker: ^1.2.1
   provider: ^6.1.5+1
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.3
   timeago: ^3.7.1
 
 dev_dependencies:
