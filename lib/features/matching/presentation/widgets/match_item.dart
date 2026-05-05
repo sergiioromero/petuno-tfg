@@ -1,17 +1,53 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../core/theme/app_theme.dart';
+import '../../../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../../../features/auth/presentation/bloc/auth_state.dart';
+import '../../../../../../features/chat/presentation/bloc/chat_bloc.dart';
+import '../../../../../../features/chat/presentation/pages/chat_conversation_page.dart';
 
 class MatchItem extends StatelessWidget {
   final Map<String, dynamic> match;
 
   const MatchItem({super.key, required this.match});
 
+  void _openChat(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+
+    final currentUid = authState.user.uid;
+    final otherUid = match['uid'] as String? ?? '';
+    final name = match['name'] as String? ?? '';
+    final photoURL = match['photoURL'] as String?;
+    final avatarEmoji = match['avatarEmoji'] as String? ?? '👤';
+
+    if (otherUid.isEmpty) return;
+
+    final sorted = [currentUid, otherUid]..sort();
+    final chatId = '${sorted[0]}_${sorted[1]}';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<ChatBloc>(),
+          child: ChatConversationPage(
+            chatId: chatId,
+            otherUserId: otherUid,
+            otherUserName: name,
+            otherUserPhotoURL: photoURL,
+            otherUserAvatarEmoji: avatarEmoji,
+            currentUid: currentUid,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        // TODO: abrir chat con el match
-      },
+      onTap: () => _openChat(context),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(12),
@@ -36,14 +72,27 @@ class MatchItem extends StatelessWidget {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: match['bgColor'],
+                    color: match['bgColor'] ?? const Color(0xFFFFF3E0),
                     shape: BoxShape.circle,
                   ),
-                  child: Center(
-                    child: Text(
-                      match['petEmoji'],
-                      style: const TextStyle(fontSize: 30),
-                    ),
+                  child: ClipOval(
+                    child: match['photoURL'] != null
+                        ? Image.network(
+                            match['photoURL'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Center(
+                              child: Text(
+                                match['petEmoji'] ?? '🐾',
+                                style: const TextStyle(fontSize: 30),
+                              ),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              match['petEmoji'] ?? '🐾',
+                              style: const TextStyle(fontSize: 30),
+                            ),
+                          ),
                   ),
                 ),
                 Positioned(
@@ -75,35 +124,37 @@ class MatchItem extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        match['name'],
+                        match['name'] ?? '',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textPrimary(context),
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryPink.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${match['match']}%',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryPink,
+                      if (match['match'] != null) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryPink.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${match['match']}%',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primaryPink,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    match['lastMessage'],
+                    match['lastMessage'] ?? 'Toca para chatear',
                     style: TextStyle(
                       fontSize: 13,
                       color: AppTheme.textSecondary(context),
@@ -115,18 +166,19 @@ class MatchItem extends StatelessWidget {
               ),
             ),
 
-            // Hora
+            // Hora + badge
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  match['time'],
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.textSecondary(context),
+                if (match['time'] != null)
+                  Text(
+                    match['time'],
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textSecondary(context),
+                    ),
                   ),
-                ),
-                if (match['unread'] > 0) ...[
+                if ((match['unread'] ?? 0) > 0) ...[
                   const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.all(5),

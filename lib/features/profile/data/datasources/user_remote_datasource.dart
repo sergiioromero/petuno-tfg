@@ -16,13 +16,28 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
   @override
   Future<UserModel> getUser(String uid) async {
     try {
-      final doc = await firestore.collection('users').doc(uid).get();
+      final userRef = firestore.collection('users').doc(uid);
 
+      // Cargamos el doc y los conteos reales de subcolecciones en paralelo
+      final results = await Future.wait([
+        userRef.get(),
+        userRef.collection('followers').count().get(),
+        userRef.collection('following').count().get(),
+      ]);
+
+      final doc = results[0] as DocumentSnapshot;
       if (!doc.exists) {
         throw ServerException('Perfil de usuario no encontrado');
       }
 
-      return UserModel.fromFirestore(doc);
+      final followersSnap = results[1] as AggregateQuerySnapshot;
+      final followingSnap = results[2] as AggregateQuerySnapshot;
+
+      return UserModel.fromFirestoreWithCounts(
+        doc,
+        followersCount: followersSnap.count ?? 0,
+        followingCount: followingSnap.count ?? 0,
+      );
     } on ServerException {
       rethrow;
     } catch (e) {

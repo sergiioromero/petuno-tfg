@@ -26,10 +26,33 @@ class UserModel extends User {
       location: data['location'] ?? '',
       interests: List<String>.from(data['interests'] ?? []),
       avatarEmoji: data['avatarEmoji'] ?? '👤',
-      photoURL: data['photoURL'], // null si no tiene foto aún
+      photoURL: data['photoURL'],
       postsCount: data['postsCount'] ?? 0,
       followersCount: data['followersCount'] ?? 0,
       followingCount: data['followingCount'] ?? 0,
+    );
+  }
+
+  /// Igual que fromFirestore pero sobreescribe los contadores con valores
+  /// calculados en tiempo real desde las subcolecciones, evitando desincronías.
+  factory UserModel.fromFirestoreWithCounts(
+    DocumentSnapshot doc, {
+    required int followersCount,
+    required int followingCount,
+  }) {
+    final data = doc.data() as Map<String, dynamic>;
+    return UserModel(
+      id: doc.id,
+      name: data['name'] ?? '',
+      age: data['age'] ?? 0,
+      bio: data['bio'] ?? '',
+      location: data['location'] ?? '',
+      interests: List<String>.from(data['interests'] ?? []),
+      avatarEmoji: data['avatarEmoji'] ?? '👤',
+      photoURL: data['photoURL'],
+      postsCount: data['postsCount'] ?? 0,
+      followersCount: followersCount,
+      followingCount: followingCount,
     );
   }
 

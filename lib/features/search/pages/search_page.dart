@@ -61,7 +61,7 @@ class _SearchPageState extends State<SearchPage> {
           .map((doc) {
             final data = doc.data() as Map<String, dynamic>;
             return {
-              'id': doc.id,
+              'id': data['uid'],
               'name': data['name'] ?? '',
               'age': data['age'] ?? 0,
               'location': data['location'] ?? '',

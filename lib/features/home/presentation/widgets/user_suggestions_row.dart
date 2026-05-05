@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../../core/theme/app_theme.dart';
+import '../../../../../../core/widgets/main_navigation.dart';
 
 class UserSuggestionsRow extends StatefulWidget {
   const UserSuggestionsRow({super.key});
@@ -66,12 +67,21 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
     });
   }
 
+  void _goToMatching(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const MainNavigation(initialIndex: 2),
+      ),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Título
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -86,9 +96,7 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                 ),
               ),
               GestureDetector(
-                onTap: () {
-                  // TODO: navegar a pantalla de matching completa
-                },
+                onTap: () => _goToMatching(context),
                 child: Text(
                   'Ver más',
                   style: TextStyle(
@@ -104,7 +112,6 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
 
         const SizedBox(height: 16),
 
-        // Stack de tarjetas centrado
         Center(
           child: SizedBox(
             height: 180,
@@ -112,7 +119,6 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Tarjeta fondo +2
                 if (_suggestions.length > 2)
                   _buildCard(
                     _suggestions[(_currentIndex + 2) % _suggestions.length],
@@ -120,8 +126,6 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                     yOffset: 16,
                     opacity: 0.5,
                   ),
-
-                // Tarjeta fondo +1
                 if (_suggestions.length > 1)
                   _buildCard(
                     _suggestions[(_currentIndex + 1) % _suggestions.length],
@@ -129,9 +133,8 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                     yOffset: 8,
                     opacity: 0.75,
                   ),
-
-                // Tarjeta principal con drag
                 GestureDetector(
+                  onTap: () => _goToMatching(context),
                   onPanUpdate: _onDragUpdate,
                   onPanEnd: _onDragEnd,
                   child: AnimatedContainer(
@@ -151,16 +154,13 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                           yOffset: 0,
                           opacity: 1.0,
                         ),
-
-                        // Icono X esquina superior izquierda
                         if (_isDragging && _dragOffset.dx < -30)
                           Positioned(
                             top: 12,
                             left: 12,
                             child: AnimatedOpacity(
                               duration: const Duration(milliseconds: 150),
-                              opacity: ((-_dragOffset.dx - 30) / 70)
-                                  .clamp(0.0, 1.0),
+                              opacity: ((-_dragOffset.dx - 30) / 70).clamp(0.0, 1.0),
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
@@ -173,24 +173,18 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.close_rounded,
-                                  color: Colors.redAccent,
-                                  size: 22,
-                                ),
+                                child: const Icon(Icons.close_rounded,
+                                    color: Colors.redAccent, size: 22),
                               ),
                             ),
                           ),
-
-                        // Icono corazón esquina superior derecha
                         if (_isDragging && _dragOffset.dx > 30)
                           Positioned(
                             top: 12,
                             right: 12,
                             child: AnimatedOpacity(
                               duration: const Duration(milliseconds: 150),
-                              opacity: ((_dragOffset.dx - 30) / 70)
-                                  .clamp(0.0, 1.0),
+                              opacity: ((_dragOffset.dx - 30) / 70).clamp(0.0, 1.0),
                               child: Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
@@ -203,11 +197,8 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                                     ),
                                   ],
                                 ),
-                                child: Icon(
-                                  Icons.favorite_rounded,
-                                  color: AppTheme.primaryPink,
-                                  size: 22,
-                                ),
+                                child: Icon(Icons.favorite_rounded,
+                                    color: AppTheme.primaryPink, size: 22),
                               ),
                             ),
                           ),
@@ -222,7 +213,6 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
 
         const SizedBox(height: 12),
 
-        // Indicador de puntos
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -276,15 +266,10 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Emoji animal
                   Center(
-                    child: Text(
-                      user['emoji'],
-                      style: const TextStyle(fontSize: 72),
-                    ),
+                    child: Text(user['emoji'],
+                        style: const TextStyle(fontSize: 72)),
                   ),
-
-                  // Degradado inferior
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -300,8 +285,6 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                       ),
                     ),
                   ),
-
-                  // Info inferior
                   Positioned(
                     left: 14,
                     right: 14,
@@ -310,7 +293,6 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        // Nombre y mascota
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -331,8 +313,6 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                             ),
                           ],
                         ),
-
-                        // Distancia
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 4),

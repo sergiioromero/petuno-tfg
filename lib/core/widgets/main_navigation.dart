@@ -7,14 +7,16 @@ import '../../features/search/pages/search_page.dart';
 import '../theme/app_theme.dart';
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int initialIndex;
+
+  const MainNavigation({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final List<Widget> _pages = [
     const HomePage(),
@@ -23,6 +25,12 @@ class _MainNavigationState extends State<MainNavigation> {
     const NotificationsPage(),
     const ProfilePage(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,45 +81,6 @@ class _MainNavigationState extends State<MainNavigation> {
               icon: Icon(Icons.person_outline),
               activeIcon: Icon(Icons.person_rounded),
               label: 'Perfil',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderPage extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _PlaceholderPage({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor(context),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 60, color: AppTheme.primaryPink),
-            const SizedBox(height: 16),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Próximamente',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppTheme.textSecondary(context),
-              ),
             ),
           ],
         ),

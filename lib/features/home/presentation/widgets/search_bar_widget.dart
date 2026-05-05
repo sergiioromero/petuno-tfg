@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../../core/theme/app_theme.dart';
+import '../../../search/pages/search_page.dart';
 
 class SearchBarWidget extends StatelessWidget {
   const SearchBarWidget({super.key});
@@ -8,7 +9,10 @@ class SearchBarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // TODO: navegar a pantalla de búsqueda
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const SearchPage()),
+        );
       },
       child: Container(
         height: 44,
