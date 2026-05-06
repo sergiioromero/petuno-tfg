@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/error/exceptions.dart';
+import '../../../../core/services/cloudinary_service.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
 
@@ -11,6 +12,11 @@ abstract class ChatRemoteDataSource {
     required String otherUserId,
     required String text,
   });
+  Future<String> sendImageMessage({
+    required String currentUserId,
+    required String otherUserId,
+    required String imagePath,
+  });
   Future<void> markAsRead({required String chatId, required String uid});
   Future<String> getOrCreateChat({
     required String currentUserId,
@@ -20,8 +26,12 @@ abstract class ChatRemoteDataSource {
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   final FirebaseFirestore firestore;
+  final CloudinaryService cloudinaryService;
 
-  ChatRemoteDataSourceImpl({required this.firestore});
+  ChatRemoteDataSourceImpl({
+    required this.firestore,
+    required this.cloudinaryService,
+  });
 
   /// Genera un chatId determinista a partir de los dos UIDs (orden alfabético)
   String _chatId(String uid1, String uid2) {
@@ -125,6 +135,52 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       return chatId;
     } catch (e) {
       throw ServerException('Error al enviar mensaje: $e');
+    }
+  }
+
+  @override
+  Future<String> sendImageMessage({
+    required String currentUserId,
+    required String otherUserId,
+    required String imagePath,
+  }) async {
+    try {
+      // Subir imagen a Cloudinary
+      final imageUrl = await cloudinaryService.uploadImage(
+        imagePath,
+        folder: 'chat_images',
+      );
+
+      final chatId = await getOrCreateChat(
+        currentUserId: currentUserId,
+        otherUserId: otherUserId,
+      );
+
+      final chatRef = firestore.collection('chats').doc(chatId);
+      final messagesRef = chatRef.collection('messages');
+
+      final batch = firestore.batch();
+
+      final messageDoc = messagesRef.doc();
+      batch.set(messageDoc, {
+        'senderId': currentUserId,
+        'text': '',
+        'imageUrl': imageUrl,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+
+      batch.update(chatRef, {
+        'lastMessage': '📷 Foto',
+        'lastMessageAt': FieldValue.serverTimestamp(),
+        'lastMessageSenderId': currentUserId,
+        'unreadCount.$otherUserId': FieldValue.increment(1),
+      });
+
+      await batch.commit();
+      return chatId;
+    } catch (e) {
+      throw ServerException('Error al enviar imagen: $e');
     }
   }
 

@@ -56,6 +56,26 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<Either<Failure, String>> sendImageMessage({
+    required String currentUserId,
+    required String otherUserId,
+    required String imagePath,
+  }) async {
+    try {
+      final chatId = await remoteDataSource.sendImageMessage(
+        currentUserId: currentUserId,
+        otherUserId: otherUserId,
+        imagePath: imagePath,
+      );
+      return Right(chatId);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Error inesperado: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> markAsRead({
     required String chatId,
     required String uid,

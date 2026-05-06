@@ -5,6 +5,7 @@ class Message extends Equatable {
   final String chatId;
   final String senderId;
   final String text;
+  final String? imageUrl;
   final DateTime createdAt;
   final bool isRead;
 
@@ -13,10 +14,14 @@ class Message extends Equatable {
     required this.chatId,
     required this.senderId,
     required this.text,
+    this.imageUrl,
     required this.createdAt,
     this.isRead = false,
   });
 
+  bool get isImage => imageUrl != null && imageUrl!.isNotEmpty;
+
   @override
-  List<Object?> get props => [id, chatId, senderId, text, createdAt, isRead];
+  List<Object?> get props =>
+      [id, chatId, senderId, text, imageUrl, createdAt, isRead];
 }

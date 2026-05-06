@@ -5,7 +5,6 @@ import 'package:petuno_app/features/home/presentation/pages/create_post_page.dar
 import 'package:petuno_app/features/profile/presentation/bloc/pet/pet_bloc.dart';
 import 'package:petuno_app/features/profile/presentation/bloc/profile/profile_bloc.dart';
 import '../widgets/home_app_bar.dart';
-import '../widgets/search_bar_widget.dart';
 import '../widgets/stories_row.dart';
 import '../widgets/user_suggestions_row.dart';
 import '../widgets/post_card.dart';
@@ -52,11 +51,6 @@ class HomePage extends StatelessWidget {
         child: ListView(
           children: [
             const SizedBox(height: 12),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: SearchBarWidget(),
-            ),
-            const SizedBox(height: 20),
             const StoriesRow(),
             const SizedBox(height: 20),
             const UserSuggestionsRow(),

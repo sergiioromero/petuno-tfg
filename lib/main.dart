@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:petuno_app/core/services/cloudinary_service.dart';
 
 // Core
 import 'core/theme/app_theme.dart';
@@ -140,6 +141,7 @@ class PetunoApp extends StatelessWidget {
             create: (context) {
               final dataSource = ChatRemoteDataSourceImpl(
                 firestore: FirebaseFirestore.instance,
+                cloudinaryService: CloudinaryService(),
               );
               final repository = ChatRepositoryImpl(remoteDataSource: dataSource);
               return ChatBloc(chatRepository: repository);

@@ -22,6 +22,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<WatchMessages>(_onWatchMessages);
     on<MessagesUpdated>(_onMessagesUpdated);
     on<SendMessage>(_onSendMessage);
+    on<SendImageMessage>(_onSendImageMessage);
     on<MarkAsRead>(_onMarkAsRead);
     on<RestoreChats>(_onRestoreChats);
     on<StopAllStreams>(_onStopAllStreams);
@@ -102,6 +103,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       currentUserId: event.currentUserId,
       otherUserId: event.otherUserId,
       text: event.text,
+    );
+  }
+
+  Future<void> _onSendImageMessage(
+    SendImageMessage event,
+    Emitter<ChatState> emit,
+  ) async {
+    await chatRepository.sendImageMessage(
+      currentUserId: event.currentUserId,
+      otherUserId: event.otherUserId,
+      imagePath: event.imagePath,
     );
   }
 

@@ -7,6 +7,7 @@ class MessageModel extends Message {
     required super.chatId,
     required super.senderId,
     required super.text,
+    super.imageUrl,
     required super.createdAt,
     super.isRead,
   });
@@ -18,6 +19,7 @@ class MessageModel extends Message {
       chatId: chatId,
       senderId: data['senderId'] ?? '',
       text: data['text'] ?? '',
+      imageUrl: data['imageUrl'] as String?,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isRead: data['isRead'] ?? false,
     );
@@ -27,6 +29,7 @@ class MessageModel extends Message {
     return {
       'senderId': senderId,
       'text': text,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'isRead': isRead,
     };

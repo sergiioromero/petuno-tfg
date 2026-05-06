@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../../../../../core/theme/app_theme.dart';
 import '../bloc/chat_bloc.dart';
@@ -32,12 +33,13 @@ class ChatConversationPage extends StatefulWidget {
 class _ChatConversationPageState extends State<ChatConversationPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ImagePicker _imagePicker = ImagePicker();
   bool _canSend = false;
+  bool _isSendingImage = false;
 
   @override
   void initState() {
     super.initState();
-    // Aseguramos que el chat existe en Firestore antes de escuchar mensajes
     context.read<ChatBloc>().add(WatchMessages(
           chatId: widget.chatId,
           currentUserId: widget.currentUid,
@@ -70,6 +72,73 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     _scrollToBottom();
   }
 
+  Future<void> _pickAndSendImage() async {
+    final source = await _showImageSourceDialog();
+    if (source == null) return;
+
+    final XFile? file = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 1080,
+    );
+    if (file == null) return;
+
+    setState(() => _isSendingImage = true);
+    try {
+      context.read<ChatBloc>().add(SendImageMessage(
+            currentUserId: widget.currentUid,
+            otherUserId: widget.otherUserId,
+            imagePath: file.path,
+          ));
+      _scrollToBottom();
+    } finally {
+      if (mounted) setState(() => _isSendingImage = false);
+    }
+  }
+
+  Future<ImageSource?> _showImageSourceDialog() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppTheme.cardColor(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.borderColor(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt_rounded,
+                    color: AppTheme.primaryPink),
+                title: Text('Cámara',
+                    style: TextStyle(color: AppTheme.textPrimary(context))),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library_rounded,
+                    color: AppTheme.primaryPink),
+                title: Text('Galería',
+                    style: TextStyle(color: AppTheme.textPrimary(context))),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -86,11 +155,14 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
+      // resizeToAvoidBottomInset: true hace que el Scaffold suba el body
+      // cuando aparece el teclado, evitando que el input bar quede tapado
+      // por el teclado o la barra de navegación de Android.
+      resizeToAvoidBottomInset: true,
       appBar: _buildAppBar(context),
       body: Column(
         children: [
           Expanded(
-            // StreamBuilder directo a Firestore — mensajes siempre en tiempo real
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('chats')
@@ -117,7 +189,6 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                         MessageModel.fromFirestore(doc, widget.chatId))
                     .toList();
 
-                // Scroll al fondo cuando llegan mensajes nuevos
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   _scrollToBottom();
                 });
@@ -158,7 +229,12 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
               },
             ),
           ),
-          _buildInputBar(context),
+          // El input bar respeta el padding del sistema (barra de navegación
+          // de Android) usando SafeArea solo en la parte inferior.
+          SafeArea(
+            top: false,
+            child: _buildInputBar(context),
+          ),
         ],
       ),
     );
@@ -196,12 +272,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
 
   Widget _buildInputBar(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(
-        left: 12,
-        right: 8,
-        top: 10,
-        bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 10 : 20,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: AppTheme.cardColor(context),
         border:
@@ -210,6 +281,26 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Botón de imagen
+          _isSendingImage
+              ? Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: AppTheme.primaryPink),
+                  ),
+                )
+              : IconButton(
+                  onPressed: _pickAndSendImage,
+                  icon: Icon(Icons.image_outlined,
+                      color: AppTheme.textSecondary(context), size: 26),
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(),
+                ),
+          const SizedBox(width: 4),
+          // Campo de texto
           Expanded(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 120),
@@ -247,6 +338,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
             ),
           ),
           const SizedBox(width: 8),
+          // Botón enviar
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 44,
@@ -342,57 +434,176 @@ class _MessageBubble extends StatelessWidget {
                   : const SizedBox(width: 28),
             ),
           Flexible(
+            child: message.isImage
+                ? _ImageBubble(
+                    imageUrl: message.imageUrl!,
+                    time: time,
+                    isMe: isMe,
+                  )
+                : _TextBubble(
+                    text: message.text,
+                    time: time,
+                    isMe: isMe,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TextBubble extends StatelessWidget {
+  final String text;
+  final String time;
+  final bool isMe;
+
+  const _TextBubble({
+    required this.text,
+    required this.time,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.72,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: isMe ? AppTheme.primaryPink : AppTheme.cardColor(context),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isMe ? 18 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 18),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 15,
+                color: isMe ? Colors.white : AppTheme.textPrimary(context),
+                height: 1.3,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            time,
+            style: TextStyle(
+              fontSize: 10,
+              color: isMe
+                  ? Colors.white.withOpacity(0.75)
+                  : AppTheme.textSecondary(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageBubble extends StatelessWidget {
+  final String imageUrl;
+  final String time;
+  final bool isMe;
+
+  const _ImageBubble({
+    required this.imageUrl,
+    required this.time,
+    required this.isMe,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.65,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isMe ? 18 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 18),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(isMe ? 18 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 18),
+            ),
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              loadingBuilder: (_, child, progress) {
+                if (progress == null) return child;
+                return Container(
+                  width: 200,
+                  height: 200,
+                  color: AppTheme.borderColor(context),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: progress.expectedTotalBytes != null
+                          ? progress.cumulativeBytesLoaded /
+                              progress.expectedTotalBytes!
+                          : null,
+                      color: AppTheme.primaryPink,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (_, __, ___) => Container(
+                width: 200,
+                height: 120,
+                color: AppTheme.borderColor(context),
+                child: const Icon(Icons.broken_image_outlined,
+                    color: Colors.grey),
+              ),
+            ),
+          ),
+          // Timestamp encima de la imagen
+          Positioned(
+            bottom: 6,
+            right: 8,
             child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.72,
-              ),
               padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: isMe
-                    ? AppTheme.primaryPink
-                    : AppTheme.cardColor(context),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isMe ? 18 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 18),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Flexible(
-                    child: Text(
-                      message.text,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: isMe
-                            ? Colors.white
-                            : AppTheme.textPrimary(context),
-                        height: 1.3,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    time,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isMe
-                          ? Colors.white.withOpacity(0.75)
-                          : AppTheme.textSecondary(context),
-                    ),
-                  ),
-                ],
+              child: Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),

@@ -17,6 +17,13 @@ abstract class ChatRepository {
     required String text,
   });
 
+  /// Envía una imagen como mensaje (sube primero a Cloudinary).
+  Future<Either<Failure, String>> sendImageMessage({
+    required String currentUserId,
+    required String otherUserId,
+    required String imagePath,
+  });
+
   /// Marca todos los mensajes no leídos de [chatId] como leídos para [uid]
   Future<Either<Failure, void>> markAsRead({
     required String chatId,

@@ -63,6 +63,21 @@ class SendMessage extends ChatEvent {
   List<Object?> get props => [currentUserId, otherUserId, text];
 }
 
+class SendImageMessage extends ChatEvent {
+  final String currentUserId;
+  final String otherUserId;
+  final String imagePath;
+
+  const SendImageMessage({
+    required this.currentUserId,
+    required this.otherUserId,
+    required this.imagePath,
+  });
+
+  @override
+  List<Object?> get props => [currentUserId, otherUserId, imagePath];
+}
+
 class MarkAsRead extends ChatEvent {
   final String chatId;
   final String uid;
