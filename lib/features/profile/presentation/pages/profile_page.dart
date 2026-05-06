@@ -5,9 +5,12 @@ import 'package:petuno_app/features/profile/presentation/pages/settings_page.dar
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/theme_provider.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../bloc/profile/profile_bloc.dart';
 import '../bloc/profile/profile_state.dart';
 import '../bloc/pet/pet_bloc.dart';
+import '../bloc/pet/pet_event.dart';
 import '../bloc/pet/pet_state.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/profile_stats.dart';
@@ -16,8 +19,31 @@ import '../widgets/pet_card.dart';
 import 'my_pets_page.dart';
 import 'edit_profile_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    _loadIfNeeded();
+  }
+
+  void _loadIfNeeded() {
+    final profileState = context.read<ProfileBloc>().state;
+    // Si no hay datos cargados, los pedimos nosotros mismos
+    if (profileState is! ProfileLoaded) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        context.read<ProfileBloc>().add(LoadProfile(authState.user.uid));
+        context.read<PetBloc>().add(LoadPets(authState.user.uid));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +54,8 @@ class ProfilePage extends StatelessWidget {
       body: SafeArea(
         child: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, profileState) {
-            if (profileState is ProfileLoading) {
+            if (profileState is ProfileLoading ||
+                profileState is ProfileInitial) {
               return Center(
                 child: CircularProgressIndicator(
                   color: AppTheme.primaryPink,
@@ -41,17 +68,24 @@ class ProfilePage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline,
+                    const Icon(Icons.error_outline,
                         size: 60, color: Colors.redAccent),
                     const SizedBox(height: 16),
                     Text('Error: ${profileState.message}'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadIfNeeded,
+                      child: const Text('Reintentar'),
+                    ),
                   ],
                 ),
               );
             }
 
             if (profileState is! ProfileLoaded) {
-              return const Center(child: Text('Sin datos'));
+              return Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryPink),
+              );
             }
 
             final user = profileState.user;
@@ -143,10 +177,10 @@ class ProfilePage extends StatelessWidget {
                                 ),
                               ),
                             ).then((_) {
-                              // Al volver, recargamos el perfil desde Firestore
-                              // para que la foto y cualquier otro cambio se reflejen
                               if (context.mounted) {
-                                context.read<ProfileBloc>().add(LoadProfile(user.id));
+                                context
+                                    .read<ProfileBloc>()
+                                    .add(LoadProfile(user.id));
                               }
                             });
                           },
@@ -262,8 +296,8 @@ class ProfilePage extends StatelessWidget {
                               height: 160,
                               child: ListView.separated(
                                 scrollDirection: Axis.horizontal,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16),
                                 itemCount: pets.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(width: 12),
@@ -289,7 +323,8 @@ class ProfilePage extends StatelessWidget {
                             ),
                           const SizedBox(height: 12),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
                             child: SizedBox(
                               width: double.infinity,
                               height: 48,
