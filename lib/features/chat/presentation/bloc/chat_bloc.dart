@@ -24,6 +24,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SendMessage>(_onSendMessage);
     on<MarkAsRead>(_onMarkAsRead);
     on<RestoreChats>(_onRestoreChats);
+    on<StopAllStreams>(_onStopAllStreams);
   }
 
   Future<void> _onWatchChats(
@@ -119,6 +120,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     _messagesSubscription?.cancel();
     _messagesSubscription = null;
     emit(ChatsLoaded(List.from(_lastChats)));
+  }
+
+  Future<void> _onStopAllStreams(
+    StopAllStreams event,
+    Emitter<ChatState> emit,
+  ) async {
+    await _chatsSubscription?.cancel();
+    await _messagesSubscription?.cancel();
+    _chatsSubscription = null;
+    _messagesSubscription = null;
+    _lastChats = [];
+    emit(ChatInitial());
   }
 
   @override

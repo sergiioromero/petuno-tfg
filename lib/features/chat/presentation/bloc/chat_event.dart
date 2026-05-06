@@ -74,3 +74,5 @@ class MarkAsRead extends ChatEvent {
 
 /// Restaura la lista de chats al volver de una conversación
 class RestoreChats extends ChatEvent {}
+
+class StopAllStreams extends ChatEvent {}

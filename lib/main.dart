@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:petuno_app/features/chat/data/datasources/chat_remote_datasource.dart';
 import 'package:petuno_app/features/chat/data/repositories/chat_repository_impl.dart';
 import 'package:petuno_app/features/chat/presentation/bloc/chat_bloc.dart';
+import 'package:petuno_app/features/chat/presentation/bloc/chat_event.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -53,6 +54,10 @@ import 'features/auth/presentation/bloc/auth_state.dart';
 
 // Paginas
 import 'features/welcome/presentation/pages/welcome_page.dart';
+
+import 'features/home/data/datasources/post_remote_datasource.dart';
+import 'features/home/presentation/bloc/post_bloc.dart';
+import 'features/home/presentation/bloc/post_event.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -129,6 +134,7 @@ class PetunoApp extends StatelessWidget {
               );
             },
           ),
+
           BlocProvider(
             create: (context) {
               final dataSource = ChatRemoteDataSourceImpl(
@@ -136,6 +142,15 @@ class PetunoApp extends StatelessWidget {
               );
               final repository = ChatRepositoryImpl(remoteDataSource: dataSource);
               return ChatBloc(chatRepository: repository);
+            },
+          ),
+
+          BlocProvider(
+            create: (context) {
+              final dataSource = PostRemoteDataSourceImpl(
+                firestore: FirebaseFirestore.instance,
+              );
+              return PostBloc(dataSource: dataSource)..add(LoadPosts());
             },
           ),
         ],
@@ -170,10 +185,18 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ProfileBloc, ProfileState>(
-      listener: (context, profileState) {
-        if (profileState is ProfileNotFound) {
-          context.read<AuthBloc>().add(AuthLogoutRequested());
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, authState) {
+        if (authState is AuthUnauthenticated) {
+          context.read<ChatBloc>().add(StopAllStreams());
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const WelcomePage()),
+            (route) => false,
+          );
+        } else if (authState is AuthAuthenticated) {
+          // ← MUÉVELO AQUÍ: solo se dispara una vez cuando cambia el estado
+          context.read<ProfileBloc>().add(LoadProfile(authState.user.uid));
+          context.read<PetBloc>().add(LoadPets(authState.user.uid));
         }
       },
       child: BlocBuilder<AuthBloc, AuthState>(
@@ -181,14 +204,7 @@ class AuthWrapper extends StatelessWidget {
           if (authState is AuthLoading || authState is AuthInitial) {
             return const SplashScreen();
           } else if (authState is AuthAuthenticated) {
-            // Cargamos perfil y mascotas con el uid real
-            context
-                .read<ProfileBloc>()
-                .add(LoadProfile(authState.user.uid));
-            context
-                .read<PetBloc>()
-                .add(LoadPets(authState.user.uid));
-            return const MainNavigation();
+            return const MainNavigation(); // ← ya sin los .add() aquí
           } else {
             return const WelcomePage();
           }
