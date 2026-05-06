@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:petuno_app/features/chat/data/datasources/chat_remote_datasource.dart';
 import 'package:petuno_app/features/chat/data/repositories/chat_repository_impl.dart';
@@ -61,7 +62,7 @@ import 'features/home/presentation/bloc/post_event.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await initializeDateFormatting('es', null);
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
