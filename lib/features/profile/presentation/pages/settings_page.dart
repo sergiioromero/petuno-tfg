@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:petuno_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:petuno_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:petuno_app/features/welcome/presentation/pages/welcome_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/theme_provider.dart';
@@ -416,8 +417,13 @@ class SettingsPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              context.read<AuthBloc>().add(AuthLogoutRequested());
               Navigator.pop(dialogContext);
+              context.read<AuthBloc>().add(AuthLogoutRequested());
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                    builder: (_) => const WelcomePage()),
+                (route) => false,
+              );
             },
             child: const Text('Cerrar sesión',
                 style: TextStyle(color: Colors.redAccent)),
@@ -444,8 +450,10 @@ class SettingsPage extends StatelessWidget {
             onPressed: () {
               Navigator.pop(dialogContext);
               context.read<AuthBloc>().add(AuthLogoutRequested());
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Cuenta eliminada correctamente')),
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                    builder: (_) => const WelcomePage()),
+                (route) => false,
               );
             },
             child: const Text('Eliminar',

@@ -83,15 +83,29 @@ class PetDetailPage extends StatelessWidget {
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                color: Color(int.parse(pet.bgColor)),
-                child: Center(
-                  child: Text(
-                    pet.emoji,
-                    style: const TextStyle(fontSize: 140),
-                  ),
-                ),
-              ),
+              background: pet.photos.isNotEmpty
+                  ? Image.network(
+                      pet.photos.first,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Color(int.parse(pet.bgColor)),
+                        child: Center(
+                          child: Text(
+                            pet.emoji,
+                            style: const TextStyle(fontSize: 140),
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: Color(int.parse(pet.bgColor)),
+                      child: Center(
+                        child: Text(
+                          pet.emoji,
+                          style: const TextStyle(fontSize: 140),
+                        ),
+                      ),
+                    ),
             ),
           ),
 
