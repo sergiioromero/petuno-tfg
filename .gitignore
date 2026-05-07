@@ -95,6 +95,9 @@ Ejemplos-20260428/
 flutter_log.txt
 firebase_debug.log
 
+# ===== ASSETS (IGNORAR LOGO) =====
+assets/logo_petuno.jpeg
+
 # ===== SECRETS (IMPORTANTE NO SUBIR) =====
 .env
 *.key
