@@ -59,7 +59,6 @@ $RECYCLE.BIN/
 *.pdf
 
 # Word
-*.docx
 *.doc
 
 # PowerPoint
@@ -74,12 +73,9 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.py
 .Python/
 pip-log.txt
-
-md_to_pdf.py
-md_to_docx.py
-create_ppt.py
 
 # ===== IMAGENES (CARPETA ORIGINAL) =====
 WhatsApp Unknown 2026-04-25 at 18.55.39/
@@ -87,7 +83,6 @@ WhatsApp Unknown 2026-04-25 at 18.55.39/
 # ===== DOCUMENTACION DEL PROYECTO (IGNORAR) =====
 MEMORIA_*.md
 MEMORIA_*.pdf
-MEMORIA_*.docx
 VERIFICACION_RUBRICA.md
 SECCIONES_NUEVAS.md
 Petuno_Presentacion.pptx
