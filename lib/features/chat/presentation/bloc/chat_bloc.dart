@@ -22,7 +22,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SendImageMessage>(_onSendImageMessage);
     on<MarkAsRead>(_onMarkAsRead);
     on<DeleteMessage>(_onDeleteMessage);
-    on<DeleteChat>(_onDeleteChat);
     on<RestoreChats>(_onRestoreChats);
     on<StopAllStreams>(_onStopAllStreams);
   }
@@ -129,17 +128,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       chatId: event.chatId,
       messageId: event.messageId,
     );
-  }
-
-  Future<void> _onDeleteChat(
-    DeleteChat event,
-    Emitter<ChatState> emit,
-  ) async {
-    await chatRepository.deleteChat(
-      chatId: event.chatId,
-      uid: event.uid,
-    );
-    // El StreamBuilder de chat_list_page se actualizará solo al cambiar Firestore
   }
 
   void _onRestoreChats(RestoreChats event, Emitter<ChatState> emit) {

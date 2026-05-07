@@ -33,9 +33,4 @@ abstract class ChatRepository {
     required String chatId,
     required String messageId,
   });
-
-  Future<Either<Failure, void>> deleteChat({
-    required String chatId,
-    required String uid,
-  });
 }

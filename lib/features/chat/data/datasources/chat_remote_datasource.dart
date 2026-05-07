@@ -26,10 +26,6 @@ abstract class ChatRemoteDataSource {
     required String chatId,
     required String messageId,
   });
-  Future<void> deleteChat({
-    required String chatId,
-    required String uid,
-  });
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -147,7 +143,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
       final chatRef = firestore.collection('chats').doc(chatId);
       final messagesRef = chatRef.collection('messages');
-
       final messageDoc = messagesRef.doc();
 
       final batch = firestore.batch();
@@ -202,7 +197,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
       final chatRef = firestore.collection('chats').doc(chatId);
       final messagesRef = chatRef.collection('messages');
-
       final messageDoc = messagesRef.doc();
 
       final batch = firestore.batch();
@@ -262,55 +256,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final chatRef = firestore.collection('chats').doc(chatId);
       final messageRef = chatRef.collection('messages').doc(messageId);
 
-      await messageRef
-          .update({'deleted': true, 'text': '', 'imageUrl': null});
+      await messageRef.update({'deleted': true, 'text': '', 'imageUrl': null});
 
       final chatDoc = await chatRef.get();
-      final lastMessageId =
-          chatDoc.data()?['lastMessageId'] as String?;
-
+      final lastMessageId = chatDoc.data()?['lastMessageId'] as String?;
       if (lastMessageId == messageId) {
         await chatRef.update({'lastMessage': 'Mensaje eliminado'});
       }
     } catch (e) {
       throw ServerException('Error al eliminar mensaje: $e');
-    }
-  }
-
-  /// Elimina el chat para el usuario actual quitándole del array participantIds.
-  /// Si quedan 0 participantes, borra el documento entero junto a sus mensajes.
-  @override
-  Future<void> deleteChat({
-    required String chatId,
-    required String uid,
-  }) async {
-    try {
-      final chatRef = firestore.collection('chats').doc(chatId);
-      final chatDoc = await chatRef.get();
-
-      if (!chatDoc.exists) return;
-
-      final data = chatDoc.data()!;
-      final participants = List<String>.from(data['participantIds'] ?? []);
-      participants.remove(uid);
-
-      if (participants.isEmpty) {
-        // Nadie más en el chat: borrar mensajes y doc
-        final messages = await chatRef.collection('messages').get();
-        final batch = firestore.batch();
-        for (final msg in messages.docs) {
-          batch.delete(msg.reference);
-        }
-        batch.delete(chatRef);
-        await batch.commit();
-      } else {
-        // Todavía hay otro participante: solo nos quitamos nosotros
-        await chatRef.update({
-          'participantIds': participants,
-        });
-      }
-    } catch (e) {
-      throw ServerException('Error al eliminar el chat: $e');
     }
   }
 }

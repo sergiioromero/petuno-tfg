@@ -125,19 +125,4 @@ class ChatRepositoryImpl implements ChatRepository {
       return Left(ServerFailure('Error inesperado: $e'));
     }
   }
-
-  @override
-  Future<Either<Failure, void>> deleteChat({
-    required String chatId,
-    required String uid,
-  }) async {
-    try {
-      await remoteDataSource.deleteChat(chatId: chatId, uid: uid);
-      return const Right(null);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return Left(ServerFailure('Error inesperado: $e'));
-    }
-  }
 }

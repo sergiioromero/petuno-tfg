@@ -96,15 +96,6 @@ class DeleteMessage extends ChatEvent {
   List<Object?> get props => [chatId, messageId];
 }
 
-class DeleteChat extends ChatEvent {
-  final String chatId;
-  final String uid;
-  const DeleteChat({required this.chatId, required this.uid});
-
-  @override
-  List<Object?> get props => [chatId, uid];
-}
-
 class RestoreChats extends ChatEvent {}
 
 class StopAllStreams extends ChatEvent {}
