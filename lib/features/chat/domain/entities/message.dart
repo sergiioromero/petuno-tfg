@@ -8,6 +8,7 @@ class Message extends Equatable {
   final String? imageUrl;
   final DateTime createdAt;
   final bool isRead;
+  final bool deleted;
 
   const Message({
     required this.id,
@@ -17,11 +18,12 @@ class Message extends Equatable {
     this.imageUrl,
     required this.createdAt,
     this.isRead = false,
+    this.deleted = false,
   });
 
   bool get isImage => imageUrl != null && imageUrl!.isNotEmpty;
 
   @override
   List<Object?> get props =>
-      [id, chatId, senderId, text, imageUrl, createdAt, isRead];
+      [id, chatId, senderId, text, imageUrl, createdAt, isRead, deleted];
 }

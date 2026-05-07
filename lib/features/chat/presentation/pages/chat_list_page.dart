@@ -39,8 +39,6 @@ class ChatListPage extends StatelessWidget {
         backgroundColor: AppTheme.primaryPink,
         child: const Icon(Icons.edit_rounded, color: Colors.white),
       ),
-      // StreamBuilder directo a Firestore — siempre actualizado,
-      // independiente del estado del ChatBloc
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('chats')
@@ -86,7 +84,8 @@ class ChatListPage extends StatelessWidget {
                   .firstWhere((id) => id != currentUid, orElse: () => '');
               final unread = chat.unreadCount[currentUid] ?? 0;
 
-              return _ChatTile(
+              return _DismissibleChatTile(
+                key: ValueKey(chat.id),
                 chatId: chat.id,
                 otherUserId: otherUserId,
                 lastMessage: chat.lastMessage,
@@ -150,7 +149,6 @@ class ChatListPage extends StatelessWidget {
         ),
       ),
     );
-    // No hace falta RestoreChats — el StreamBuilder siempre está vivo
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -189,6 +187,129 @@ class ChatListPage extends StatelessWidget {
             size: 28,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Chat tile con swipe para eliminar ───────────────────────────────────────
+
+class _DismissibleChatTile extends StatelessWidget {
+  final String chatId;
+  final String otherUserId;
+  final String? lastMessage;
+  final DateTime? lastMessageAt;
+  final int unreadCount;
+  final bool isLastMessageMine;
+  final String currentUid;
+  final void Function(String name, String? photoURL, String avatarEmoji) onTap;
+
+  const _DismissibleChatTile({
+    super.key,
+    required this.chatId,
+    required this.otherUserId,
+    required this.lastMessage,
+    required this.lastMessageAt,
+    required this.unreadCount,
+    required this.isLastMessageMine,
+    required this.currentUid,
+    required this.onTap,
+  });
+
+  Future<bool> _confirmDelete(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.cardColor(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Eliminar chat',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary(context),
+          ),
+        ),
+        content: Text(
+          '¿Seguro que quieres eliminar esta conversación? Solo desaparecerá de tu lista.',
+          style: TextStyle(
+            fontSize: 14,
+            color: AppTheme.textSecondary(context),
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: AppTheme.textSecondary(context)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: ValueKey(chatId),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (_) => _confirmDelete(context),
+      onDismissed: (_) {
+        context.read<ChatBloc>().add(
+          DeleteChat(chatId: chatId, uid: currentUid),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Chat eliminado'),
+            backgroundColor: AppTheme.primaryPink,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      },
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        color: Colors.redAccent,
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26),
+            SizedBox(height: 4),
+            Text(
+              'Eliminar',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      child: _ChatTile(
+        chatId: chatId,
+        otherUserId: otherUserId,
+        lastMessage: lastMessage,
+        lastMessageAt: lastMessageAt,
+        unreadCount: unreadCount,
+        isLastMessageMine: isLastMessageMine,
+        currentUid: currentUid,
+        onTap: onTap,
       ),
     );
   }
@@ -394,7 +515,7 @@ class _NewChatSheetState extends State<_NewChatSheet> {
   }
 }
 
-// ─── Chat tile ───────────────────────────────────────────────────────────────
+// ─── Chat tile ────────────────────────────────────────────────────────────────
 
 class _ChatTile extends StatelessWidget {
   final String chatId;
@@ -441,12 +562,14 @@ class _ChatTile extends StatelessWidget {
         return ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          leading: _Avatar(photoURL: photoURL, avatarEmoji: avatarEmoji, size: 52),
+          leading:
+              _Avatar(photoURL: photoURL, avatarEmoji: avatarEmoji, size: 52),
           title: Text(
             name,
             style: TextStyle(
               fontSize: 15,
-              fontWeight: unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
+              fontWeight:
+                  unreadCount > 0 ? FontWeight.w700 : FontWeight.w600,
               color: AppTheme.textPrimary(context),
             ),
           ),
@@ -521,7 +644,7 @@ class _ChatTile extends StatelessWidget {
   }
 }
 
-// ─── Avatar ──────────────────────────────────────────────────────────────────
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 
 class _Avatar extends StatelessWidget {
   final String? photoURL;
@@ -554,13 +677,13 @@ class _Avatar extends StatelessWidget {
                 photoURL!,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Center(
-                  child:
-                      Text(avatarEmoji, style: TextStyle(fontSize: size * 0.45)),
+                  child: Text(avatarEmoji,
+                      style: TextStyle(fontSize: size * 0.45)),
                 ),
               )
             : Center(
-                child:
-                    Text(avatarEmoji, style: TextStyle(fontSize: size * 0.45)),
+                child: Text(avatarEmoji,
+                    style: TextStyle(fontSize: size * 0.45)),
               ),
       ),
     );

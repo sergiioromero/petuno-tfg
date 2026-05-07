@@ -22,6 +22,14 @@ abstract class ChatRemoteDataSource {
     required String currentUserId,
     required String otherUserId,
   });
+  Future<void> deleteMessage({
+    required String chatId,
+    required String messageId,
+  });
+  Future<void> deleteChat({
+    required String chatId,
+    required String uid,
+  });
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -38,7 +46,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     return '${sorted[0]}_${sorted[1]}';
   }
 
-  /// Escribe una notificación en notifications/{recipientId}/items
   Future<void> _sendNotification({
     required String recipientId,
     required String senderId,
@@ -64,9 +71,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         'createdAt': FieldValue.serverTimestamp(),
         'isRead': false,
       });
-    } catch (_) {
-      // Las notificaciones no deben romper el flujo principal
-    }
+    } catch (_) {}
   }
 
   @override
@@ -115,6 +120,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         await ref.set({
           'participantIds': [currentUserId, otherUserId],
           'lastMessage': null,
+          'lastMessageId': null,
           'lastMessageAt': null,
           'lastMessageSenderId': null,
           'unreadCount': {currentUserId: 0, otherUserId: 0},
@@ -142,18 +148,21 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final chatRef = firestore.collection('chats').doc(chatId);
       final messagesRef = chatRef.collection('messages');
 
+      final messageDoc = messagesRef.doc();
+
       final batch = firestore.batch();
 
-      final messageDoc = messagesRef.doc();
       batch.set(messageDoc, {
         'senderId': currentUserId,
         'text': text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
         'isRead': false,
+        'deleted': false,
       });
 
       batch.update(chatRef, {
         'lastMessage': text.trim(),
+        'lastMessageId': messageDoc.id,
         'lastMessageAt': FieldValue.serverTimestamp(),
         'lastMessageSenderId': currentUserId,
         'unreadCount.$otherUserId': FieldValue.increment(1),
@@ -161,7 +170,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
       await batch.commit();
 
-      // Notificación al destinatario
       await _sendNotification(
         recipientId: otherUserId,
         senderId: currentUserId,
@@ -195,19 +203,22 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final chatRef = firestore.collection('chats').doc(chatId);
       final messagesRef = chatRef.collection('messages');
 
+      final messageDoc = messagesRef.doc();
+
       final batch = firestore.batch();
 
-      final messageDoc = messagesRef.doc();
       batch.set(messageDoc, {
         'senderId': currentUserId,
         'text': '',
         'imageUrl': imageUrl,
         'createdAt': FieldValue.serverTimestamp(),
         'isRead': false,
+        'deleted': false,
       });
 
       batch.update(chatRef, {
         'lastMessage': '📷 Foto',
+        'lastMessageId': messageDoc.id,
         'lastMessageAt': FieldValue.serverTimestamp(),
         'lastMessageSenderId': currentUserId,
         'unreadCount.$otherUserId': FieldValue.increment(1),
@@ -215,7 +226,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
       await batch.commit();
 
-      // Notificación al destinatario
       await _sendNotification(
         recipientId: otherUserId,
         senderId: currentUserId,
@@ -240,6 +250,67 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       });
     } catch (e) {
       throw ServerException('Error al marcar como leído: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteMessage({
+    required String chatId,
+    required String messageId,
+  }) async {
+    try {
+      final chatRef = firestore.collection('chats').doc(chatId);
+      final messageRef = chatRef.collection('messages').doc(messageId);
+
+      await messageRef
+          .update({'deleted': true, 'text': '', 'imageUrl': null});
+
+      final chatDoc = await chatRef.get();
+      final lastMessageId =
+          chatDoc.data()?['lastMessageId'] as String?;
+
+      if (lastMessageId == messageId) {
+        await chatRef.update({'lastMessage': 'Mensaje eliminado'});
+      }
+    } catch (e) {
+      throw ServerException('Error al eliminar mensaje: $e');
+    }
+  }
+
+  /// Elimina el chat para el usuario actual quitándole del array participantIds.
+  /// Si quedan 0 participantes, borra el documento entero junto a sus mensajes.
+  @override
+  Future<void> deleteChat({
+    required String chatId,
+    required String uid,
+  }) async {
+    try {
+      final chatRef = firestore.collection('chats').doc(chatId);
+      final chatDoc = await chatRef.get();
+
+      if (!chatDoc.exists) return;
+
+      final data = chatDoc.data()!;
+      final participants = List<String>.from(data['participantIds'] ?? []);
+      participants.remove(uid);
+
+      if (participants.isEmpty) {
+        // Nadie más en el chat: borrar mensajes y doc
+        final messages = await chatRef.collection('messages').get();
+        final batch = firestore.batch();
+        for (final msg in messages.docs) {
+          batch.delete(msg.reference);
+        }
+        batch.delete(chatRef);
+        await batch.commit();
+      } else {
+        // Todavía hay otro participante: solo nos quitamos nosotros
+        await chatRef.update({
+          'participantIds': participants,
+        });
+      }
+    } catch (e) {
+      throw ServerException('Error al eliminar el chat: $e');
     }
   }
 }

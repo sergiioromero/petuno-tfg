@@ -155,9 +155,6 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor(context),
-      // resizeToAvoidBottomInset: true hace que el Scaffold suba el body
-      // cuando aparece el teclado, evitando que el input bar quede tapado
-      // por el teclado o la barra de navegación de Android.
       resizeToAvoidBottomInset: true,
       appBar: _buildAppBar(context),
       body: Column(
@@ -221,6 +218,8 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                           showAvatar: showAvatar,
                           otherUserPhotoURL: widget.otherUserPhotoURL,
                           otherUserAvatarEmoji: widget.otherUserAvatarEmoji,
+                          currentUid: widget.currentUid,
+                          chatId: widget.chatId,
                         ),
                       ],
                     );
@@ -229,8 +228,6 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
               },
             ),
           ),
-          // El input bar respeta el padding del sistema (barra de navegación
-          // de Android) usando SafeArea solo en la parte inferior.
           SafeArea(
             top: false,
             child: _buildInputBar(context),
@@ -281,7 +278,6 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Botón de imagen
           _isSendingImage
               ? Padding(
                   padding: const EdgeInsets.all(10),
@@ -300,7 +296,6 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
                   constraints: const BoxConstraints(),
                 ),
           const SizedBox(width: 4),
-          // Campo de texto
           Expanded(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 120),
@@ -338,7 +333,6 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
             ),
           ),
           const SizedBox(width: 8),
-          // Botón enviar
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             width: 44,
@@ -402,6 +396,8 @@ class _MessageBubble extends StatelessWidget {
   final bool showAvatar;
   final String? otherUserPhotoURL;
   final String otherUserAvatarEmoji;
+  final String currentUid;
+  final String chatId;
 
   const _MessageBubble({
     required this.message,
@@ -409,7 +405,59 @@ class _MessageBubble extends StatelessWidget {
     required this.showAvatar,
     required this.otherUserPhotoURL,
     required this.otherUserAvatarEmoji,
+    required this.currentUid,
+    required this.chatId,
   });
+
+  void _onLongPress(BuildContext context) {
+    if (message.senderId != currentUid) return;
+    if (message.deleted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardColor(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.borderColor(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.redAccent),
+                title: const Text(
+                  'Eliminar mensaje',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<ChatBloc>().add(DeleteMessage(
+                        chatId: chatId,
+                        messageId: message.id,
+                      ));
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -434,17 +482,68 @@ class _MessageBubble extends StatelessWidget {
                   : const SizedBox(width: 28),
             ),
           Flexible(
-            child: message.isImage
-                ? _ImageBubble(
-                    imageUrl: message.imageUrl!,
-                    time: time,
-                    isMe: isMe,
-                  )
-                : _TextBubble(
-                    text: message.text,
-                    time: time,
-                    isMe: isMe,
-                  ),
+            child: GestureDetector(
+              onLongPress: () => _onLongPress(context),
+              child: message.deleted
+                  ? _DeletedBubble(isMe: isMe)
+                  : message.isImage
+                      ? _ImageBubble(
+                          imageUrl: message.imageUrl!,
+                          time: time,
+                          isMe: isMe,
+                        )
+                      : _TextBubble(
+                          text: message.text,
+                          time: time,
+                          isMe: isMe,
+                        ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeletedBubble extends StatelessWidget {
+  final bool isMe;
+  const _DeletedBubble({required this.isMe});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.72,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: isMe
+            ? AppTheme.primaryPink.withOpacity(0.3)
+            : AppTheme.cardColor(context),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(isMe ? 18 : 4),
+          bottomRight: Radius.circular(isMe ? 4 : 18),
+        ),
+        border: Border.all(
+          color: AppTheme.borderColor(context),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.block_rounded,
+              size: 14, color: AppTheme.textSecondary(context)),
+          const SizedBox(width: 6),
+          Text(
+            'Mensaje eliminado',
+            style: TextStyle(
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+              color: AppTheme.textSecondary(context),
+            ),
           ),
         ],
       ),
@@ -556,65 +655,64 @@ class _ImageBubble extends StatelessWidget {
           ),
         ),
         child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(isMe ? 18 : 4),
-              bottomRight: Radius.circular(isMe ? 4 : 18),
-            ),
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              loadingBuilder: (_, child, progress) {
-                if (progress == null) return child;
-                return Container(
-                  width: 200,
-                  height: 200,
-                  color: AppTheme.borderColor(context),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      value: progress.expectedTotalBytes != null
-                          ? progress.cumulativeBytesLoaded /
-                              progress.expectedTotalBytes!
-                          : null,
-                      color: AppTheme.primaryPink,
-                      strokeWidth: 2,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(18),
+                topRight: const Radius.circular(18),
+                bottomLeft: Radius.circular(isMe ? 18 : 4),
+                bottomRight: Radius.circular(isMe ? 4 : 18),
+              ),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    width: 200,
+                    height: 200,
+                    color: AppTheme.borderColor(context),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: progress.expectedTotalBytes != null
+                            ? progress.cumulativeBytesLoaded /
+                                progress.expectedTotalBytes!
+                            : null,
+                        color: AppTheme.primaryPink,
+                        strokeWidth: 2,
+                      ),
                     ),
-                  ),
-                );
-              },
-              errorBuilder: (_, __, ___) => Container(
-                width: 200,
-                height: 120,
-                color: AppTheme.borderColor(context),
-                child: const Icon(Icons.broken_image_outlined,
-                    color: Colors.grey),
-              ),
-            ),
-          ),
-          // Timestamp encima de la imagen
-          Positioned(
-            bottom: 6,
-            right: 8,
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.4),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                time,
-                style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.white,
+                  );
+                },
+                errorBuilder: (_, __, ___) => Container(
+                  width: 200,
+                  height: 120,
+                  color: AppTheme.borderColor(context),
+                  child: const Icon(Icons.broken_image_outlined,
+                      color: Colors.grey),
                 ),
               ),
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 6,
+              right: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  time,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

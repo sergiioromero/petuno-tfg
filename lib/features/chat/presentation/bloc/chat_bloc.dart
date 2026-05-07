@@ -11,9 +11,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   StreamSubscription? _messagesSubscription;
 
   String _activeChatId = '';
-
-  // Guardamos la última lista de chats para poder restaurarla
-  // cuando volvemos de una conversación
   List _lastChats = [];
 
   ChatBloc({required this.chatRepository}) : super(ChatInitial()) {
@@ -24,6 +21,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     on<SendMessage>(_onSendMessage);
     on<SendImageMessage>(_onSendImageMessage);
     on<MarkAsRead>(_onMarkAsRead);
+    on<DeleteMessage>(_onDeleteMessage);
+    on<DeleteChat>(_onDeleteChat);
     on<RestoreChats>(_onRestoreChats);
     on<StopAllStreams>(_onStopAllStreams);
   }
@@ -32,9 +31,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     WatchChats event,
     Emitter<ChatState> emit,
   ) async {
-    // Solo relanzamos el stream si no está ya activo
     if (_chatsSubscription != null) {
-      // El stream ya existe — solo restauramos el estado de chats
       emit(ChatsLoaded(List.from(_lastChats)));
       return;
     }
@@ -60,14 +57,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     WatchMessages event,
     Emitter<ChatState> emit,
   ) async {
-    // NO cancelamos _chatsSubscription — sigue corriendo en segundo plano
     await _messagesSubscription?.cancel();
 
     _activeChatId = event.chatId;
 
     emit(ChatLoading());
 
-    // Aseguramos que el documento del chat existe antes de escuchar
     final chatResult = await chatRepository.getOrCreateChat(
       currentUserId: event.currentUserId,
       otherUserId: event.otherUserId,
@@ -78,7 +73,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       return;
     }
 
-    // Marcar como leído al abrir
     chatRepository.markAsRead(chatId: event.chatId, uid: event.currentUserId);
 
     _messagesSubscription = chatRepository.watchMessages(event.chatId).listen(
@@ -127,7 +121,27 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     );
   }
 
-  // Restaurar la lista de chats al volver de una conversación
+  Future<void> _onDeleteMessage(
+    DeleteMessage event,
+    Emitter<ChatState> emit,
+  ) async {
+    await chatRepository.deleteMessage(
+      chatId: event.chatId,
+      messageId: event.messageId,
+    );
+  }
+
+  Future<void> _onDeleteChat(
+    DeleteChat event,
+    Emitter<ChatState> emit,
+  ) async {
+    await chatRepository.deleteChat(
+      chatId: event.chatId,
+      uid: event.uid,
+    );
+    // El StreamBuilder de chat_list_page se actualizará solo al cambiar Firestore
+  }
+
   void _onRestoreChats(RestoreChats event, Emitter<ChatState> emit) {
     _messagesSubscription?.cancel();
     _messagesSubscription = null;

@@ -10,6 +10,7 @@ class MessageModel extends Message {
     super.imageUrl,
     required super.createdAt,
     super.isRead,
+    super.deleted,
   });
 
   factory MessageModel.fromFirestore(DocumentSnapshot doc, String chatId) {
@@ -22,6 +23,7 @@ class MessageModel extends Message {
       imageUrl: data['imageUrl'] as String?,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isRead: data['isRead'] ?? false,
+      deleted: data['deleted'] ?? false,
     );
   }
 
@@ -32,6 +34,7 @@ class MessageModel extends Message {
       if (imageUrl != null) 'imageUrl': imageUrl,
       'createdAt': Timestamp.fromDate(createdAt),
       'isRead': isRead,
+      'deleted': deleted,
     };
   }
 }

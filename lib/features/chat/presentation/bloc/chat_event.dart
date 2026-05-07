@@ -87,7 +87,24 @@ class MarkAsRead extends ChatEvent {
   List<Object?> get props => [chatId, uid];
 }
 
-/// Restaura la lista de chats al volver de una conversación
+class DeleteMessage extends ChatEvent {
+  final String chatId;
+  final String messageId;
+  const DeleteMessage({required this.chatId, required this.messageId});
+
+  @override
+  List<Object?> get props => [chatId, messageId];
+}
+
+class DeleteChat extends ChatEvent {
+  final String chatId;
+  final String uid;
+  const DeleteChat({required this.chatId, required this.uid});
+
+  @override
+  List<Object?> get props => [chatId, uid];
+}
+
 class RestoreChats extends ChatEvent {}
 
 class StopAllStreams extends ChatEvent {}
