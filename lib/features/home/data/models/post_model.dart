@@ -5,13 +5,13 @@ class PostModel {
   final String uid;
   final String userName;
   final String avatarEmoji;
-  final String? userPhotoURL;        // ← añade
+  final String? userPhotoURL;
   final String petName;
   final String petBreed;
   final String petEmoji;
   final String bgColor;
   final String? petPhotoURL;
-  final List<String> photoURLs;      // ← añade
+  final List<String> photoURLs;
   final String description;
   final List<String> tags;
   final int likes;

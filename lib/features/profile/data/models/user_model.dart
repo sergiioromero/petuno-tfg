@@ -34,7 +34,7 @@ class UserModel extends User {
   }
 
   /// Igual que fromFirestore pero sobreescribe los contadores con valores
-  /// calculados en tiempo real desde las subcolecciones, evitando desincronías.
+  /// calculados en tiempo real desde las subcolecciones.
   factory UserModel.fromFirestoreWithCounts(
     DocumentSnapshot doc, {
     required int followersCount,

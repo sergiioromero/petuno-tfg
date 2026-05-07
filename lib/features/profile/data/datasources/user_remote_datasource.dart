@@ -57,7 +57,7 @@ class UserRemoteDataSourceImpl implements UserRemoteDataSource {
     }
   }
 
-  /// Actualiza únicamente el campo photoURL — más eficiente que reescribir todo el doc
+  /// Actualiza únicamente el campo photoURL
   @override
   Future<void> updatePhotoURL(String uid, String photoURL) async {
     try {

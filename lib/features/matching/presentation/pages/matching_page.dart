@@ -223,7 +223,7 @@ class _MatchingPageState extends State<MatchingPage>
         .doc(otherUid)
         .set({'likedAt': FieldValue.serverTimestamp()});
 
-    // ¿Match mutuo?
+    // Match mutuo
     final theirLike = await _db
         .collection('swipes')
         .doc(otherUid)
@@ -233,7 +233,7 @@ class _MatchingPageState extends State<MatchingPage>
 
     if (!theirLike.exists) return;
 
-    // ¡Match! Guardar en ambos
+    // Match Guardar en ambos
     await Future.wait([
       _db
           .collection('swipes')

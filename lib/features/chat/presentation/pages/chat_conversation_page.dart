@@ -388,7 +388,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   }
 }
 
-// ─── Widgets ─────────────────────────────────────────────────────────────────
+// Widgets
 
 class _MessageBubble extends StatelessWidget {
   final MessageModel message;

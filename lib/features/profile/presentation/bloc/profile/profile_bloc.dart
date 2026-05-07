@@ -66,8 +66,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     UpdateProfilePhoto event,
     Emitter<ProfileState> emit,
   ) async {
-    // FIX: solo procedemos si hay datos de usuario cargados.
-    // Si el estado no es ProfileLoaded (p.ej. doble tap durante una subida),
+    // Solo procedemos si hay datos de usuario cargados.
+    // Si el estado no es ProfileLoaded,
     // ignoramos el evento para evitar perder la referencia al usuario.
     final currentState = state;
     if (currentState is! ProfileLoaded) return;

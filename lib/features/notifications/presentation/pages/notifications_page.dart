@@ -191,7 +191,7 @@ class NotificationsPage extends StatelessWidget {
   }
 }
 
-// ─── Widget de ítem ───────────────────────────────────────────────────────────
+// Widget de ítem
 
 class _NotifItem extends StatelessWidget {
   final QueryDocumentSnapshot doc;

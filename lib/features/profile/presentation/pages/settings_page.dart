@@ -465,7 +465,7 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-// ─── Página de info con diseño de app real ───────────────────────────────────
+// Página de info con diseño de app real
 
 class _InfoSection {
   final IconData icon;

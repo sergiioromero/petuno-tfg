@@ -239,7 +239,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                       const SizedBox(height: 20),
 
-                      // Fecha de nacimiento — ahora sí se usa el _selectedDate
+                      // Fecha de nacimiento
                       AuthTextField(
                         label: 'Fecha de nacimiento',
                         hint: 'DD/MM/AAAA',

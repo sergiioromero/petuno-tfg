@@ -90,7 +90,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           .where((t) => t.isNotEmpty)
           .toList();
 
-      // Datos de mascota (opcional)
+      // Datos de mascota
       final petName = _selectedPet?.name ?? '';
       final petBreed = _selectedPet?.breed ?? '';
       final petEmoji = _selectedPet?.emoji ?? '🐾';
@@ -313,7 +313,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
             const SizedBox(height: 20),
 
-            // Selector de mascota (opcional)
+            // Selector de mascota
             if (pets.isNotEmpty) ...[
               Text(
                 'Mascota (opcional)',
@@ -332,7 +332,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   separatorBuilder: (_, __) => const SizedBox(width: 10),
                   itemBuilder: (context, index) {
                     if (index == 0) {
-                      // Opción "Sin mascota"
+                      // Opción sin mascota
                       final selected = _selectedPet == null;
                       return GestureDetector(
                         onTap: () => setState(() => _selectedPet = null),

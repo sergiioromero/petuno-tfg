@@ -6,7 +6,7 @@ class Chat extends Equatable {
   final String? lastMessage;
   final DateTime? lastMessageAt;
   final String? lastMessageSenderId;
-  final Map<String, int> unreadCount; // uid -> cantidad no leídos
+  final Map<String, int> unreadCount; // Cantidad no leídos
 
   const Chat({
     required this.id,

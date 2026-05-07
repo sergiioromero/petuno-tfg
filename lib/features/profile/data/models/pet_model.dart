@@ -63,7 +63,7 @@ class PetModel extends Pet {
     );
   }
 
-  /// Nuevo: construir desde documento de Firestore
+  /// Construir desde documento de Firestore
   factory PetModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return PetModel(
@@ -78,7 +78,7 @@ class PetModel extends Pet {
     );
   }
 
-  /// Nuevo: convertir a Map para Firestore
+  /// Convertir a Map para Firestore
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,

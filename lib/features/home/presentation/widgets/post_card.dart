@@ -252,7 +252,7 @@ class _PostCardState extends State<PostCard>
                     ),
                   ),
 
-            // Degradado inferior
+            // Degradado
             Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
@@ -294,7 +294,7 @@ class _PostCardState extends State<PostCard>
                 ),
               ),
 
-            // Contenido inferior de la card
+            // Contenido abajo card
             Positioned(
               left: 14,
               right: 14,
@@ -413,8 +413,6 @@ class _PostCardState extends State<PostCard>
   }
 }
 
-// ─── Lightbox ─────────────────────────────────────────────────────────────────
-
 class _PhotoLightbox extends StatefulWidget {
   final PostModel post;
   final String currentUid;
@@ -489,7 +487,7 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
           fit: StackFit.expand,
           children: [
 
-            // ── Fotos con swipe ────────────────────────────────────────
+            // Fotos con swipe
             PageView.builder(
               controller: _pageController,
               itemCount: post.photoURLs.length,
@@ -522,7 +520,7 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
               ),
             ),
 
-            // ── Degradado inferior ─────────────────────────────────────
+            // Degradado abajo
             Positioned(
               bottom: 0, left: 0, right: 0,
               height: 300,
@@ -542,7 +540,7 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
               ),
             ),
 
-            // ── Botón cerrar ───────────────────────────────────────────
+            // Botón cerrar
             Positioned(
               top: 12,
               right: 12,
@@ -561,7 +559,7 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
               ),
             ),
 
-            // ── Contador de fotos ──────────────────────────────────────
+            // Contador de fotos
             if (post.photoURLs.length > 1)
               Positioned(
                 top: 12,
@@ -583,7 +581,7 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
                 ),
               ),
 
-            // ── Info del post (abajo izquierda, sobre la foto) ─────────
+            // Info del post (abajo izquierda, sobre la foto)
             Positioned(
               left: 14,
               right: 14,
@@ -673,7 +671,7 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
 
                   const SizedBox(height: 14),
 
-                  // Acciones + puntos indicadores
+                  // Acciones + indicadores
                   Row(
                     children: [
                       GestureDetector(
@@ -707,7 +705,6 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
                               fontWeight: FontWeight.w600,
                               color: Colors.white)),
                       const Spacer(),
-                      // Puntos indicadores inline con las acciones
                       if (post.photoURLs.length > 1)
                         Row(
                           children: List.generate(

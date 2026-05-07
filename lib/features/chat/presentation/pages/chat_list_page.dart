@@ -39,7 +39,7 @@ class ChatListPage extends StatelessWidget {
         backgroundColor: AppTheme.primaryPink,
         child: const Icon(Icons.edit_rounded, color: Colors.white),
       ),
-      // StreamBuilder directo a Firestore — siempre actualizado,
+      // StreamBuilder directo a Firestore,
       // independiente del estado del ChatBloc
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -150,7 +150,6 @@ class ChatListPage extends StatelessWidget {
         ),
       ),
     );
-    // No hace falta RestoreChats — el StreamBuilder siempre está vivo
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -194,7 +193,7 @@ class ChatListPage extends StatelessWidget {
   }
 }
 
-// ─── Bottom sheet para buscar usuario y abrir chat ───────────────────────────
+// ─── Sheet para buscar usuari y abrir chat
 
 class _NewChatSheet extends StatefulWidget {
   final String currentUid;
@@ -394,8 +393,6 @@ class _NewChatSheetState extends State<_NewChatSheet> {
   }
 }
 
-// ─── Chat tile ───────────────────────────────────────────────────────────────
-
 class _ChatTile extends StatelessWidget {
   final String chatId;
   final String otherUserId;
@@ -520,8 +517,6 @@ class _ChatTile extends StatelessWidget {
     );
   }
 }
-
-// ─── Avatar ──────────────────────────────────────────────────────────────────
 
 class _Avatar extends StatelessWidget {
   final String? photoURL;

@@ -197,7 +197,7 @@ class AuthWrapper extends StatelessWidget {
             (route) => false,
           );
         } else if (authState is AuthAuthenticated) {
-          // ← MUÉVELO AQUÍ: solo se dispara una vez cuando cambia el estado
+          // Solo se dispara una vez cuando cambia el estado
           context.read<ProfileBloc>().add(LoadProfile(authState.user.uid));
           context.read<PetBloc>().add(LoadPets(authState.user.uid));
         }
@@ -207,7 +207,7 @@ class AuthWrapper extends StatelessWidget {
           if (authState is AuthLoading || authState is AuthInitial) {
             return const SplashScreen();
           } else if (authState is AuthAuthenticated) {
-            return const MainNavigation(); // ← ya sin los .add() aquí
+            return const MainNavigation();
           } else {
             return const WelcomePage();
           }

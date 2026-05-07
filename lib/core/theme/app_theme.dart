@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class AppTheme {
   static const Color primaryPink = Color(0xFFFF80CC);
 
-  // Colores se adaptan
   static Color backgroundColor(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFF121212)

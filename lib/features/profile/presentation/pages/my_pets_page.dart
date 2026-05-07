@@ -128,7 +128,7 @@ class MyPetsPage extends StatelessWidget {
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   // clipBehavior hace que el hijo respete el borderRadius
-                  // sin necesidad de ClipRRect extra — elimina los bordes blancos
+                  // sin necesidad de ClipRRect extra elimina los bordes blancos
                   clipBehavior: Clip.hardEdge,
                   decoration: BoxDecoration(
                     color: AppTheme.cardColor(context),

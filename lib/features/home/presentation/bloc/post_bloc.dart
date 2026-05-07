@@ -63,7 +63,6 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     if (state is! PostsLoaded) return;
     final current = (state as PostsLoaded).posts;
 
-    // Eliminar optimistamente de la lista
     final updated = current.where((p) => p.id != event.postId).toList();
     emit(PostsLoaded(updated));
 

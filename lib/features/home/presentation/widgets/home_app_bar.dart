@@ -60,7 +60,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
 
-        // Botón de chat con badge de no leídos real
+        // Botón de chat con badge de no leídos
         BlocBuilder<ChatBloc, ChatState>(
           builder: (context, state) {
             // Obtenemos el uid del usuario actual

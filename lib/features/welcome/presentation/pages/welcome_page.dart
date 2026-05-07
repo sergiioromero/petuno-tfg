@@ -86,7 +86,6 @@ class _WelcomePageState extends State<WelcomePage>
 
               const Spacer(flex: 2),
 
-              // Ilustración del perro con animación flotante
               // Icono de pata
               Center(
                 child: AnimatedBuilder(

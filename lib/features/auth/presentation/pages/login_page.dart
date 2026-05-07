@@ -41,21 +41,18 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onGoogleLogin() {
-    // TODO: Implementar Google Sign-In
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Google Sign-In próximamente')),
     );
   }
 
   void _onAppleLogin() {
-    // TODO: Implementar Apple Sign-In
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Apple Sign-In próximamente')),
     );
   }
 
   void _onForgotPassword() {
-    // TODO: Implementar recuperación de contraseña
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Recuperación de contraseña próximamente')),
     );
