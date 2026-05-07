@@ -4,72 +4,91 @@ import '../../../../../../core/theme/app_theme.dart';
 class StoriesRow extends StatelessWidget {
   const StoriesRow({super.key});
 
-  static const List<Map<String, dynamic>> _stories = [
-    {'name': 'Tú', 'emoji': '➕', 'isOwn': true},
-    {'name': 'Carlos', 'emoji': '🐕', 'isOwn': false},
-    {'name': 'Laura', 'emoji': '🐈', 'isOwn': false},
-    {'name': 'Marta', 'emoji': '🐇', 'isOwn': false},
-    {'name': 'Pedro', 'emoji': '🦜', 'isOwn': false},
-    {'name': 'Ana', 'emoji': '🐠', 'isOwn': false},
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 90,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: _stories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (context, index) {
-          final story = _stories[index];
-          return GestureDetector(
-            onTap: () {},
-            child: Column(
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: story['isOwn']
-                        ? null
-                        : LinearGradient(
-                            colors: [
-                              AppTheme.primaryPink,
-                              const Color(0xFFFF5BB5),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.cardColor(context),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.primaryPink.withOpacity(0.25),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryPink.withOpacity(0.2),
+                    AppTheme.primaryPink.withOpacity(0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: AppTheme.primaryPink,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Historias',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary(context),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryPink,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Text(
+                          'Próximamente',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
                           ),
-                    color: story['isOwn'] ? AppTheme.inputBackground(context) : null,
-                    border: story['isOwn']
-                        ? Border.all(
-                            color: AppTheme.borderColor(context),
-                            width: 1.5,
-                          )
-                        : null,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Center(
-                    child: Text(
-                      story['emoji'],
-                      style: const TextStyle(fontSize: 26),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Comparte momentos de tu mascota con la comunidad',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary(context),
+                      height: 1.3,
                     ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  story['name'],
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary(context),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

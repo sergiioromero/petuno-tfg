@@ -256,6 +256,38 @@ class _MatchingPageState extends State<MatchingPage>
       }),
     ]);
 
+    // Notificaciones de match a ambos usuarios
+    try {
+      final myDoc = await _db.collection('users').doc(_currentUid).get();
+      final myData = myDoc.data() ?? {};
+      final myName = myData['name'] ?? 'Alguien';
+      final myPhoto = myData['photoURL'] as String?;
+      final otherName = candidate['name'] ?? 'Alguien';
+      final otherPhoto = candidate['photoURL'] as String?;
+
+      final notifRef = _db.collection('notifications');
+      await Future.wait([
+        // Notifico al otro usuario
+        notifRef.doc(otherUid).collection('items').add({
+          'type': 'match',
+          'fromName': myName,
+          'fromPhotoURL': myPhoto,
+          'message': '¡Es un match! Empieza a chatear',
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        }),
+        // Me notifico a mí mismo también
+        notifRef.doc(_currentUid).collection('items').add({
+          'type': 'match',
+          'fromName': otherName,
+          'fromPhotoURL': otherPhoto,
+          'message': '¡Es un match! Empieza a chatear',
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        }),
+      ]);
+    } catch (_) {}
+
     if (mounted) {
       _showMatchDialog(candidate);
       _loadMatches();

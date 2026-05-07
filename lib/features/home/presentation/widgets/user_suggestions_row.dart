@@ -1,6 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../core/theme/app_theme.dart';
 import '../../../../../../core/widgets/main_navigation.dart';
+import '../../../../../../features/profile/data/models/user_model.dart';
+import '../../../../../../features/profile/domain/entities/user.dart' as domain;
+import '../../../../../../features/profile/presentation/pages/user_profile_page.dart';
+import '../../../../../../features/chat/presentation/bloc/chat_bloc.dart';
 
 class UserSuggestionsRow extends StatefulWidget {
   const UserSuggestionsRow({super.key});
@@ -10,41 +17,42 @@ class UserSuggestionsRow extends StatefulWidget {
 }
 
 class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
-  final List<Map<String, dynamic>> _suggestions = [
-    {
-      'name': 'Sofía',
-      'pet': 'Golden Retriever',
-      'emoji': '🐕',
-      'bgColor': const Color(0xFFFFF3E0),
-      'distance': '0.8 km',
-    },
-    {
-      'name': 'Javier',
-      'pet': 'Gato Persa',
-      'emoji': '🐈',
-      'bgColor': const Color(0xFFE8F5E9),
-      'distance': '1.2 km',
-    },
-    {
-      'name': 'Elena',
-      'pet': 'Conejo enano',
-      'emoji': '🐇',
-      'bgColor': const Color(0xFFF3E5F5),
-      'distance': '2.0 km',
-    },
-    {
-      'name': 'Miguel',
-      'pet': 'Loro',
-      'emoji': '🦜',
-      'bgColor': const Color(0xFFE3F2FD),
-      'distance': '3.5 km',
-    },
-  ];
-
+  List<domain.User> _suggestions = [];
+  bool _loading = true;
   int _currentIndex = 0;
   Offset _dragOffset = Offset.zero;
   double _dragAngle = 0;
   bool _isDragging = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSuggestions();
+  }
+
+  Future<void> _loadSuggestions() async {
+    try {
+      final currentUid = FirebaseAuth.instance.currentUser?.uid;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .limit(20)
+          .get();
+
+      final users = snapshot.docs
+          .where((doc) => doc.id != currentUid)
+          .map((doc) => UserModel.fromFirestore(doc))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _suggestions = users;
+          _loading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   void _onDragUpdate(DragUpdateDetails details) {
     setState(() {
@@ -55,7 +63,7 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
   }
 
   void _onDragEnd(DragEndDetails details) {
-    if (_dragOffset.dx.abs() > 100) {
+    if (_dragOffset.dx.abs() > 100 && _suggestions.isNotEmpty) {
       setState(() {
         _currentIndex = (_currentIndex + 1) % _suggestions.length;
       });
@@ -74,6 +82,18 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
         builder: (_) => const MainNavigation(initialIndex: 2),
       ),
       (route) => false,
+    );
+  }
+
+  void _openUserProfile(BuildContext context, domain.User user) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<ChatBloc>(),
+          child: UserProfilePage(userId: user.id),
+        ),
+      ),
     );
   }
 
@@ -112,135 +132,177 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
 
         const SizedBox(height: 16),
 
-        Center(
-          child: SizedBox(
+        if (_loading)
+          const SizedBox(
             height: 180,
-            width: 280,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                if (_suggestions.length > 2)
-                  _buildCard(
-                    _suggestions[(_currentIndex + 2) % _suggestions.length],
-                    scale: 0.88,
-                    yOffset: 16,
-                    opacity: 0.5,
-                  ),
-                if (_suggestions.length > 1)
-                  _buildCard(
-                    _suggestions[(_currentIndex + 1) % _suggestions.length],
-                    scale: 0.94,
-                    yOffset: 8,
-                    opacity: 0.75,
-                  ),
-                GestureDetector(
-                  onTap: () => _goToMatching(context),
-                  onPanUpdate: _onDragUpdate,
-                  onPanEnd: _onDragEnd,
-                  child: AnimatedContainer(
-                    duration: _isDragging
-                        ? Duration.zero
-                        : const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                    transform: Matrix4.identity()
-                      ..translate(_dragOffset.dx, _dragOffset.dy)
-                      ..rotateZ(_dragAngle),
-                    transformAlignment: Alignment.bottomCenter,
-                    child: Stack(
-                      children: [
-                        _buildCard(
-                          _suggestions[_currentIndex],
-                          scale: 1.0,
-                          yOffset: 0,
-                          opacity: 1.0,
-                        ),
-                        if (_isDragging && _dragOffset.dx < -30)
-                          Positioned(
-                            top: 12,
-                            left: 12,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 150),
-                              opacity: ((-_dragOffset.dx - 30) / 70).clamp(0.0, 1.0),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.12),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_suggestions.isEmpty)
+          SizedBox(
+            height: 180,
+            child: Center(
+              child: Text(
+                'No hay sugerencias por ahora',
+                style: TextStyle(color: AppTheme.textSecondary(context)),
+              ),
+            ),
+          )
+        else ...[
+          Center(
+            child: SizedBox(
+              height: 180,
+              width: 280,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (_suggestions.length > 2)
+                    _buildCard(
+                      context,
+                      _suggestions[(_currentIndex + 2) % _suggestions.length],
+                      scale: 0.88,
+                      yOffset: 16,
+                      opacity: 0.5,
+                      draggable: false,
+                    ),
+                  if (_suggestions.length > 1)
+                    _buildCard(
+                      context,
+                      _suggestions[(_currentIndex + 1) % _suggestions.length],
+                      scale: 0.94,
+                      yOffset: 8,
+                      opacity: 0.75,
+                      draggable: false,
+                    ),
+                  GestureDetector(
+                    onTap: () => _openUserProfile(
+                        context, _suggestions[_currentIndex]),
+                    onPanUpdate: _onDragUpdate,
+                    onPanEnd: _onDragEnd,
+                    child: AnimatedContainer(
+                      duration: _isDragging
+                          ? Duration.zero
+                          : const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                      transform: Matrix4.identity()
+                        ..translate(_dragOffset.dx, _dragOffset.dy)
+                        ..rotateZ(_dragAngle),
+                      transformAlignment: Alignment.bottomCenter,
+                      child: Stack(
+                        children: [
+                          _buildCard(
+                            context,
+                            _suggestions[_currentIndex],
+                            scale: 1.0,
+                            yOffset: 0,
+                            opacity: 1.0,
+                            draggable: true,
+                          ),
+                          if (_isDragging && _dragOffset.dx < -30)
+                            Positioned(
+                              top: 12,
+                              left: 12,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 150),
+                                opacity:
+                                    ((-_dragOffset.dx - 30) / 70).clamp(0.0, 1.0),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.12),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.close_rounded,
+                                      color: Colors.redAccent, size: 22),
                                 ),
-                                child: const Icon(Icons.close_rounded,
-                                    color: Colors.redAccent, size: 22),
                               ),
                             ),
-                          ),
-                        if (_isDragging && _dragOffset.dx > 30)
-                          Positioned(
-                            top: 12,
-                            right: 12,
-                            child: AnimatedOpacity(
-                              duration: const Duration(milliseconds: 150),
-                              opacity: ((_dragOffset.dx - 30) / 70).clamp(0.0, 1.0),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.12),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
+                          if (_isDragging && _dragOffset.dx > 30)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 150),
+                                opacity:
+                                    ((_dragOffset.dx - 30) / 70).clamp(0.0, 1.0),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.12),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(Icons.favorite_rounded,
+                                      color: AppTheme.primaryPink, size: 22),
                                 ),
-                                child: Icon(Icons.favorite_rounded,
-                                    color: AppTheme.primaryPink, size: 22),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            _suggestions.length,
-            (i) => AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: i == _currentIndex ? 18 : 6,
-              height: 6,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(3),
-                color: i == _currentIndex
-                    ? AppTheme.primaryPink
-                    : const Color(0xFFDDDDDD),
+                ],
               ),
             ),
           ),
-        ),
+
+          const SizedBox(height: 12),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _suggestions.length.clamp(0, 5),
+              (i) => AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: i == _currentIndex % _suggestions.length.clamp(1, 5)
+                    ? 18
+                    : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  color:
+                      i == _currentIndex % _suggestions.length.clamp(1, 5)
+                          ? AppTheme.primaryPink
+                          : const Color(0xFFDDDDDD),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 
   Widget _buildCard(
-    Map<String, dynamic> user, {
+    BuildContext context,
+    domain.User user, {
     required double scale,
     required double yOffset,
     required double opacity,
+    required bool draggable,
   }) {
+    // Paleta de colores de fondo para cuando no hay foto
+    final bgColors = [
+      const Color(0xFFFFF3E0),
+      const Color(0xFFE8F5E9),
+      const Color(0xFFF3E5F5),
+      const Color(0xFFE3F2FD),
+      const Color(0xFFFCE4EC),
+    ];
+    final bgColor = bgColors[user.id.hashCode.abs() % bgColors.length];
+    final hasPhoto = user.photoURL != null && user.photoURL!.isNotEmpty;
+
     return Transform.translate(
       offset: Offset(0, yOffset),
       child: Transform.scale(
@@ -251,7 +313,7 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
             width: 280,
             height: 160,
             decoration: BoxDecoration(
-              color: user['bgColor'],
+              color: bgColor,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
@@ -266,10 +328,23 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Center(
-                    child: Text(user['emoji'],
-                        style: const TextStyle(fontSize: 72)),
-                  ),
+                  // Foto de perfil o avatar emoji
+                  if (hasPhoto)
+                    Image.network(
+                      user.photoURL!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(user.avatarEmoji,
+                            style: const TextStyle(fontSize: 72)),
+                      ),
+                    )
+                  else
+                    Center(
+                      child: Text(user.avatarEmoji,
+                          style: const TextStyle(fontSize: 72)),
+                    ),
+
+                  // Degradado inferior
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -285,6 +360,8 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                       ),
                     ),
                   ),
+
+                  // Info inferior
                   Positioned(
                     left: 14,
                     right: 14,
@@ -293,47 +370,46 @@ class _UserSuggestionsRowState extends State<UserSuggestionsRow> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user['name'],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user.name.isNotEmpty ? user.name : 'Usuario',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            Text(
-                              user['pet'],
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withOpacity(0.8),
-                              ),
-                            ),
-                          ],
+                              if (user.location.isNotEmpty)
+                                Text(
+                                  user.location,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.location_on,
-                                  size: 11, color: AppTheme.primaryPink),
-                              const SizedBox(width: 3),
-                              Text(
-                                user['distance'],
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.primaryPink,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            'Ver perfil',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.primaryPink,
+                            ),
                           ),
                         ),
                       ],

@@ -47,6 +47,103 @@ class _PostCardState extends State<PostCard>
     _likeController.forward().then((_) => _likeController.reverse());
   }
 
+  void _showOptions(BuildContext context) {
+    final authState = context.read<AuthBloc>().state;
+    final currentUid =
+        authState is AuthAuthenticated ? authState.user.uid : '';
+    if (currentUid != widget.post.uid) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardColor(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.borderColor(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.redAccent),
+                title: const Text(
+                  'Eliminar publicación',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _confirmDelete(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    final bloc = context.read<PostBloc>();
+    showDialog(
+      context: context,
+      builder: (ctx) => BlocProvider.value(
+        value: bloc,
+        child: AlertDialog(
+        backgroundColor: AppTheme.cardColor(context),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Eliminar publicación',
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary(context),
+          ),
+        ),
+        content: Text(
+          '¿Seguro que quieres eliminar esta publicación? Esta acción no se puede deshacer.',
+          style: TextStyle(color: AppTheme.textSecondary(context)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: AppTheme.textSecondary(context)),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<PostBloc>().add(DeletePost(widget.post.id));
+            },
+            child: const Text(
+              'Eliminar',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+        ),
+      ),
+    );
+  }
+
   void _openPhotoViewer(BuildContext context) {
     final authState = context.read<AuthBloc>().state;
     final currentUid =
@@ -173,6 +270,29 @@ class _PostCardState extends State<PostCard>
                 ),
               ),
             ),
+
+            // Botón de opciones (solo visible para el autor)
+            if (currentUid == widget.post.uid)
+              Positioned(
+                top: 10,
+                right: 10,
+                child: GestureDetector(
+                  onTap: () => _showOptions(context),
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.45),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.more_vert_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
 
             // Contenido inferior de la card
             Positioned(

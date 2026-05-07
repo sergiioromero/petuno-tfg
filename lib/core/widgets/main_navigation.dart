@@ -38,7 +38,8 @@ class _MainNavigationState extends State<MainNavigation> {
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: AppTheme.borderColor(context))),
+          border:
+              Border(top: BorderSide(color: AppTheme.borderColor(context))),
           color: AppTheme.cardColor(context),
         ),
         child: BottomNavigationBar(

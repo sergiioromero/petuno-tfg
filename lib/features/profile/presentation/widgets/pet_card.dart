@@ -32,14 +32,21 @@ class PetCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
-              // Emoji del animal
+              // Foto real o emoji de fondo
               Positioned.fill(
-                child: Center(
-                  child: Text(
-                    pet.emoji,
-                    style: const TextStyle(fontSize: 60),
-                  ),
-                ),
+                child: pet.photos.isNotEmpty
+                    ? Image.network(
+                        pet.photos.first,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(pet.emoji,
+                              style: const TextStyle(fontSize: 60)),
+                        ),
+                      )
+                    : Center(
+                        child: Text(pet.emoji,
+                            style: const TextStyle(fontSize: 60)),
+                      ),
               ),
 
               // Degradado inferior

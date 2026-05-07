@@ -33,10 +33,40 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     required this.cloudinaryService,
   });
 
-  /// Genera un chatId determinista a partir de los dos UIDs (orden alfabético)
   String _chatId(String uid1, String uid2) {
     final sorted = [uid1, uid2]..sort();
     return '${sorted[0]}_${sorted[1]}';
+  }
+
+  /// Escribe una notificación en notifications/{recipientId}/items
+  Future<void> _sendNotification({
+    required String recipientId,
+    required String senderId,
+    required String type,
+    required String message,
+  }) async {
+    try {
+      final senderDoc =
+          await firestore.collection('users').doc(senderId).get();
+      final senderData = senderDoc.data() ?? {};
+      final fromName = senderData['name'] ?? 'Alguien';
+      final fromPhotoURL = senderData['photoURL'] as String?;
+
+      await firestore
+          .collection('notifications')
+          .doc(recipientId)
+          .collection('items')
+          .add({
+        'type': type,
+        'fromName': fromName,
+        'fromPhotoURL': fromPhotoURL,
+        'message': message,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false,
+      });
+    } catch (_) {
+      // Las notificaciones no deben romper el flujo principal
+    }
   }
 
   @override
@@ -112,7 +142,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       final chatRef = firestore.collection('chats').doc(chatId);
       final messagesRef = chatRef.collection('messages');
 
-      // Añadir mensaje y actualizar el chat en un batch
       final batch = firestore.batch();
 
       final messageDoc = messagesRef.doc();
@@ -123,7 +152,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         'isRead': false,
       });
 
-      // Actualizar metadatos del chat e incrementar unread del otro usuario
       batch.update(chatRef, {
         'lastMessage': text.trim(),
         'lastMessageAt': FieldValue.serverTimestamp(),
@@ -132,6 +160,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       });
 
       await batch.commit();
+
+      // Notificación al destinatario
+      await _sendNotification(
+        recipientId: otherUserId,
+        senderId: currentUserId,
+        type: 'message',
+        message: 'te envió un mensaje',
+      );
+
       return chatId;
     } catch (e) {
       throw ServerException('Error al enviar mensaje: $e');
@@ -145,7 +182,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     required String imagePath,
   }) async {
     try {
-      // Subir imagen a Cloudinary
       final imageUrl = await cloudinaryService.uploadImage(
         imagePath,
         folder: 'chat_images',
@@ -178,6 +214,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       });
 
       await batch.commit();
+
+      // Notificación al destinatario
+      await _sendNotification(
+        recipientId: otherUserId,
+        senderId: currentUserId,
+        type: 'message',
+        message: 'te envió una foto',
+      );
+
       return chatId;
     } catch (e) {
       throw ServerException('Error al enviar imagen: $e');

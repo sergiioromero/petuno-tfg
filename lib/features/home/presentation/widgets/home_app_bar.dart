@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import '../../../../../../core/theme/app_theme.dart';
 import '../../../../../../core/providers/theme_provider.dart';
+import '../../../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../../../features/chat/presentation/bloc/chat_bloc.dart';
 import '../../../../../../features/chat/presentation/bloc/chat_state.dart';
 import '../../../../../../features/chat/presentation/pages/chat_list_page.dart';
@@ -61,16 +63,17 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         // Botón de chat con badge de no leídos real
         BlocBuilder<ChatBloc, ChatState>(
           builder: (context, state) {
+            // Obtenemos el uid del usuario actual
+            final authState = context.read<AuthBloc>().state;
+            final currentUid =
+                authState is AuthAuthenticated ? authState.user.uid : '';
+
             int totalUnread = 0;
-            if (state is ChatsLoaded) {
-              // Sumamos los no leídos de todos los chats
-              // (ya filtrados por el uid del usuario actual en el bloc)
+            if (state is ChatsLoaded && currentUid.isNotEmpty) {
               for (final chat in state.chats) {
-                // El badge muestra el total de chats con mensajes no leídos
-                // no el total de mensajes, para no ser intrusivo
-                final unread = chat.unreadCount.values
-                    .fold<int>(0, (sum, v) => sum + v);
-                if (unread > 0) totalUnread++;
+                // Solo contamos los no leídos para este usuario
+                final myUnread = chat.unreadCount[currentUid] ?? 0;
+                if (myUnread > 0) totalUnread++;
               }
             }
 

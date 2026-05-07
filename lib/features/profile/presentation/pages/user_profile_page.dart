@@ -144,6 +144,30 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 (_userData!['followersCount'] as int? ?? 0) + 1;
           }
         });
+
+        // Notificación al usuario seguido
+        try {
+          final meDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(_currentUid)
+              .get();
+          final meData = meDoc.data() ?? {};
+          final myName = meData['name'] ?? 'Alguien';
+          final myPhoto = meData['photoURL'] as String?;
+
+          await FirebaseFirestore.instance
+              .collection('notifications')
+              .doc(widget.userId)
+              .collection('items')
+              .add({
+            'type': 'follower',
+            'fromName': myName,
+            'fromPhotoURL': myPhoto,
+            'message': 'ha comenzado a seguirte',
+            'createdAt': FieldValue.serverTimestamp(),
+            'isRead': false,
+          });
+        } catch (_) {}
       }
 
       if (context.mounted) {

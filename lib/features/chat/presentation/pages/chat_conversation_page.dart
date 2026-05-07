@@ -548,7 +548,14 @@ class _ImageBubble extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => _FullscreenImagePage(imageUrl: imageUrl),
+          ),
+        ),
+        child: Stack(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.only(
@@ -603,6 +610,57 @@ class _ImageBubble extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 10,
                   color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FullscreenImagePage extends StatelessWidget {
+  final String imageUrl;
+  const _FullscreenImagePage({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                },
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.broken_image_outlined,
+                  color: Colors.white54,
+                  size: 64,
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black45,
+                  shape: const CircleBorder(),
                 ),
               ),
             ),
