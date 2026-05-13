@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../domain/entities/auth_user.dart';
 
@@ -86,7 +87,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return AuthUser(
         uid: user.uid,
-        email: user.email!,
+        email: email,
         displayName: name,
         photoURL: user.photoURL,
       );
@@ -115,7 +116,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return AuthUser(
         uid: user.uid,
-        email: user.email!,
+        email: email,
         displayName: user.displayName,
         photoURL: user.photoURL,
       );
@@ -212,6 +213,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await batch.commit();
 
       // Eliminar cuenta de Firebase Auth
+      await _googleSignIn.signOut();
       await user.delete();
     } on firebase_auth.FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
@@ -228,7 +230,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<AuthUser> signInWithGoogle() async {
     try {
       final googleUser = await _pickGoogleAccount();
-      if (googleUser == null) throw ServerException('Inicio de sesión cancelado');
+      if (googleUser == null) {
+        throw ServerException('Inicio de sesión cancelado');
+      }
 
       final googleAuth = await googleUser.authentication;
       final credential = firebase_auth.GoogleAuthProvider.credential(
@@ -239,17 +243,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final userCredential =
           await firebaseAuth.signInWithCredential(credential);
       final user = userCredential.user;
-      if (user == null) throw ServerException('Error al iniciar sesión con Google');
+      if (user == null) {
+        throw ServerException('Error al iniciar sesión con Google');
+      }
 
       // Si es un usuario nuevo, crear documento en Firestore
       if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        final today = DateTime.now();
-        final age = today.year - 1990; // Edad por defecto
         await firestore.collection('users').doc(user.uid).set({
           'uid': user.uid,
-          'email': user.email ?? '',
-          'name': user.displayName ?? 'Usuario',
-          'age': age,
+          'email': googleUser.email,
+          'name': user.displayName ?? googleUser.displayName ?? 'Usuario',
           'bio': '',
           'location': '',
           'interests': [],
@@ -264,30 +267,47 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return AuthUser(
         uid: user.uid,
-        email: user.email!,
+        email: googleUser.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
       );
     } on firebase_auth.FirebaseAuthException catch (e) {
+      if (e.code == 'account-exists-with-different-credential') {
+        throw ServerException(
+          'Ya existe una cuenta con este email. '
+          'Inicia sesión con email y contraseña, luego vincula Google desde ajustes.',
+        );
+      }
       throw ServerException(_getAuthErrorMessage(e.code));
     } catch (e) {
       throw ServerException('Error al iniciar sesión con Google: $e');
     }
   }
 
-  static final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId:
+        kIsWeb ? 'WEB_CLIENT_ID.apps.googleusercontent.com' : null,
+  );
 
   Future<GoogleSignInAccount?> _pickGoogleAccount() async {
     try {
       return await _googleSignIn.signIn();
-    } catch (_) {
-      return null;
+    } catch (e) {
+      final errorStr = e.toString();
+      if (errorStr.contains('CANCELED') ||
+          errorStr.contains('SIGN_IN_CANCELLED') ||
+          errorStr.contains('canceled') ||
+          errorStr.contains('cancelled')) {
+        return null;
+      }
+      rethrow;
     }
   }
 
   @override
   Future<void> logout() async {
     try {
+      await _googleSignIn.signOut();
       await firebaseAuth.signOut();
     } catch (e) {
       throw ServerException('Error al cerrar sesión: $e');
@@ -302,7 +322,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return AuthUser(
         uid: user.uid,
-        email: user.email!,
+        email: user.email ?? '',
         displayName: user.displayName,
         photoURL: user.photoURL,
       );
@@ -317,7 +337,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (user == null) return null;
       return AuthUser(
         uid: user.uid,
-        email: user.email!,
+        email: user.email ?? '',
         displayName: user.displayName,
         photoURL: user.photoURL,
       );
@@ -342,6 +362,20 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         return 'Contraseña incorrecta';
       case 'invalid-credential':
         return 'Credenciales inválidas';
+      case 'account-exists-with-different-credential':
+        return 'Ya existe una cuenta con este email. Inicia sesión con email y contraseña';
+      case 'credential-already-in-use':
+        return 'Esta credencial ya está vinculada a otra cuenta';
+      case 'network-request-failed':
+        return 'Error de conexión. Comprueba tu conexión a internet';
+      case 'too-many-requests':
+        return 'Demasiados intentos. Inténtalo más tarde';
+      case 'requires-recent-login':
+        return 'Necesitas volver a iniciar sesión para realizar esta operación';
+      case 'user-token-expired':
+        return 'La sesión ha expirado. Vuelve a iniciar sesión';
+      case 'provider-already-linked':
+        return 'Este proveedor ya está vinculado a tu cuenta';
       default:
         return 'Error de autenticación: $code';
     }
