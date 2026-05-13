@@ -69,7 +69,17 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
 
   @override
   Future<void> deletePost(String postId) async {
-    await firestore.collection('posts').doc(postId).delete();
+    final batch = firestore.batch();
+    final commentsSnap = await firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .get();
+    for (final doc in commentsSnap.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(firestore.collection('posts').doc(postId));
+    await batch.commit();
   }
 
   @override

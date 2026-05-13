@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import '../../../../../../core/theme/app_theme.dart';
-import '../../../../../../core/providers/theme_provider.dart';
-import '../../../../../../features/auth/presentation/bloc/auth_bloc.dart';
-import '../../../../../../features/auth/presentation/bloc/auth_state.dart';
-import '../../../../../../features/chat/presentation/bloc/chat_bloc.dart';
-import '../../../../../../features/chat/presentation/bloc/chat_state.dart';
-import '../../../../../../features/chat/presentation/pages/chat_list_page.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/providers/theme_provider.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../features/auth/presentation/bloc/auth_state.dart';
+import '../../../../features/chat/presentation/bloc/chat_bloc.dart';
+import '../../../../features/chat/presentation/bloc/chat_state.dart';
+import '../../../../features/chat/presentation/pages/chat_list_page.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   const HomeAppBar({super.key});

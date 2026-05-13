@@ -2,12 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../../core/theme/app_theme.dart';
-import '../../../../../../core/widgets/main_navigation.dart';
-import '../../../../../../features/profile/data/models/user_model.dart';
-import '../../../../../../features/profile/domain/entities/user.dart' as domain;
-import '../../../../../../features/profile/presentation/pages/user_profile_page.dart';
-import '../../../../../../features/chat/presentation/bloc/chat_bloc.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/main_navigation.dart';
+import '../../../../features/profile/data/models/user_model.dart';
+import '../../../../features/profile/domain/entities/user.dart' as domain;
+import '../../../../features/profile/presentation/pages/user_profile_page.dart';
+import '../../../../features/chat/presentation/bloc/chat_bloc.dart';
 
 class UserSuggestionsRow extends StatefulWidget {
   const UserSuggestionsRow({super.key});

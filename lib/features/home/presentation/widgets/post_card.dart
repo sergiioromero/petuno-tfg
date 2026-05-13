@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../../../core/theme/app_theme.dart';
-import '../../../../../../features/auth/presentation/bloc/auth_bloc.dart';
-import '../../../../../../features/auth/presentation/bloc/auth_state.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_event.dart';
 import '../../data/models/post_model.dart';
@@ -522,10 +522,10 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
                           ),
                         ),
                   errorBuilder: (_, __, ___) => Container(
-                    color: Colors.black,
-                    child: const Center(
-                      child: Icon(Icons.broken_image_outlined,
-                          color: Colors.white38, size: 48),
+                    color: Color(int.parse(post.bgColor)),
+                    child: Center(
+                      child: Text(post.petEmoji,
+                          style: const TextStyle(fontSize: 80)),
                     ),
                   ),
                 ),

@@ -8,7 +8,7 @@ import '../widgets/home_app_bar.dart';
 import '../widgets/stories_row.dart';
 import '../widgets/user_suggestions_row.dart';
 import '../widgets/post_card.dart';
-import '../../../../../../core/theme/app_theme.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_state.dart';
 import '../bloc/post_event.dart';

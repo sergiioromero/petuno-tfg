@@ -313,9 +313,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                       child: CircularProgressIndicator(
                                           color: AppTheme.primaryPink,
                                           strokeWidth: 2)),
-                          errorBuilder: (_, __, ___) => const Center(
-                              child: Icon(Icons.broken_image_outlined,
-                                  color: Colors.white38, size: 48)),
+                          errorBuilder: (_, __, ___) => Center(
+                              child: Text(widget.post.petEmoji,
+                                  style: const TextStyle(fontSize: 64))),
                         ),
                       )
                     : Image.network(
@@ -328,9 +328,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                     child: CircularProgressIndicator(
                                         color: AppTheme.primaryPink,
                                         strokeWidth: 2)),
-                        errorBuilder: (_, __, ___) => const Center(
-                            child: Icon(Icons.broken_image_outlined,
-                                color: Colors.white38, size: 48)),
+                        errorBuilder: (_, __, ___) => Center(
+                            child: Text(widget.post.petEmoji,
+                                style: const TextStyle(fontSize: 64))),
                       ),
               ),
             ),

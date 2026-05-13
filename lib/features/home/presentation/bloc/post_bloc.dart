@@ -100,13 +100,17 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     }).toList();
 
     emit(PostsLoaded(updated));
-    await dataSource.addComment(
-      event.postId,
-      event.uid,
-      event.userName,
-      event.userPhotoURL,
-      event.text,
-    );
+    try {
+      await dataSource.addComment(
+        event.postId,
+        event.uid,
+        event.userName,
+        event.userPhotoURL,
+        event.text,
+      );
+    } catch (e) {
+      emit(PostError('Error al añadir comentario'));
+    }
   }
 
   Future<void> _onDeleteComment(
@@ -138,6 +142,10 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     }).toList();
 
     emit(PostsLoaded(updated));
-    await dataSource.deleteComment(event.postId, event.commentId);
+    try {
+      await dataSource.deleteComment(event.postId, event.commentId);
+    } catch (e) {
+      emit(PostError('Error al eliminar comentario'));
+    }
   }
 }
