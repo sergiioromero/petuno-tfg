@@ -6,27 +6,35 @@ part 'pet_model.g.dart';
 
 @HiveType(typeId: 1)
 class PetModel extends Pet {
+  @override
   @HiveField(0)
   final String id;
 
+  @override
   @HiveField(1)
   final String name;
 
+  @override
   @HiveField(2)
   final String breed;
 
+  @override
   @HiveField(3)
   final String emoji;
 
+  @override
   @HiveField(4)
   final String bgColor;
 
+  @override
   @HiveField(5)
   final String age;
 
+  @override
   @HiveField(6)
   final String personality;
 
+  @override
   @HiveField(7)
   final List<String> photos;
 

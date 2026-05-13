@@ -21,6 +21,7 @@ class PostDetailPage extends StatefulWidget {
 class _PostDetailPageState extends State<PostDetailPage> {
   final _commentController = TextEditingController();
   final _scrollController = ScrollController();
+  int _retryKey = 0;
 
   @override
   void dispose() {
@@ -74,6 +75,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         children: [
           Expanded(
             child: StreamBuilder<List<CommentModel>>(
+              key: ValueKey('comments_$_retryKey'),
               stream: FirebaseFirestore.instance
                   .collection('posts')
                   .doc(widget.post.id)
@@ -85,16 +87,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       .toList()),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Error al cargar comentarios',
-                        style: TextStyle(
-                            color: AppTheme.textSecondary(context))),
+                  return _buildError(
+                    context,
+                    error: snapshot.error,
+                    onRetry: () => setState(() => _retryKey++),
                   );
                 }
 
                 final comments = snapshot.data ?? [];
 
-                if (comments.isEmpty && !snapshot.hasData) {
+                if (!snapshot.hasData) {
                   return const Center(
                       child: CircularProgressIndicator(
                           color: AppTheme.primaryPink));
@@ -108,14 +110,30 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       Padding(
                         padding: const EdgeInsets.all(40),
                         child: Center(
-                          child: Text(
-                            'No hay comentarios aún.\n¡Sé el primero en comentar!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppTheme.textSecondary(context),
-                              height: 1.5,
-                            ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded,
+                                  size: 48,
+                                  color: AppTheme.textSecondary(context)
+                                      .withOpacity(0.4)),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No hay comentarios aún',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textSecondary(context),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '¡Sé el primero en comentar!',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppTheme.textSecondary(context),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -148,6 +166,85 @@ class _PostDetailPageState extends State<PostDetailPage> {
           ),
           _buildCommentInput(context),
         ],
+      ),
+    );
+  }
+
+  Widget _buildError(BuildContext context,
+      {required Object? error, required VoidCallback onRetry}) {
+    String msg = 'Error al cargar los comentarios';
+    if (error is FirebaseException) {
+      switch (error.code) {
+        case 'permission-denied':
+          msg = 'No tienes permiso para ver los comentarios';
+          break;
+        case 'unavailable':
+          msg = 'Servicio no disponible. Comprueba tu conexión';
+          break;
+        case 'not-found':
+          msg = 'Publicación no encontrada';
+          break;
+        default:
+          msg = error.message ?? 'Error de Firestore: ${error.code}';
+      }
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryPink.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.error_outline_rounded,
+                  size: 36, color: AppTheme.primaryPink),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Algo salió mal',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary(context),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              msg,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary(context),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              height: 44,
+              child: ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Reintentar',
+                    style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w700)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryPink,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -364,39 +461,47 @@ class _CommentTile extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(comment.userName,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.cardColor(context),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(comment.userName,
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textPrimary(context))),
+                      const SizedBox(width: 8),
+                      Text(
+                        _formatTime(comment.createdAt),
                         style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary(context))),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatTime(comment.createdAt),
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textSecondary(context)),
-                    ),
-                    if (isOwner) ...[
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: onDelete,
-                        child: Icon(Icons.delete_outline_rounded,
-                            size: 16,
+                            fontSize: 11,
                             color: AppTheme.textSecondary(context)),
                       ),
+                      if (isOwner) ...[
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: onDelete,
+                          child: Icon(Icons.delete_outline_rounded,
+                              size: 16,
+                              color: AppTheme.textSecondary(context)),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(comment.text,
-                    style: TextStyle(
-                        fontSize: 14, color: AppTheme.textPrimary(context))),
-              ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(comment.text,
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textPrimary(context))),
+                ],
+              ),
             ),
           ),
         ],

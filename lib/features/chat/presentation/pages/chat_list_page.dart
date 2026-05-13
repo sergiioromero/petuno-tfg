@@ -7,7 +7,6 @@ import '../../../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../data/models/chat_model.dart';
 import '../bloc/chat_bloc.dart';
-import '../bloc/chat_event.dart';
 import 'chat_conversation_page.dart';
 
 class ChatListPage extends StatelessWidget {

@@ -40,10 +40,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _onGoogleLogin() {
-    context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
-  }
-
   void _onAppleLogin() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Apple Sign-In próximamente')),
@@ -176,13 +172,6 @@ class _LoginPageState extends State<LoginPage> {
                       // Login social
                       Row(
                         children: [
-                          SocialButton(
-                            label: 'Google',
-                            icon: Icons.g_mobiledata_rounded,
-                            iconColor: const Color(0xFFDB4437),
-                            onTap: isLoading ? () {} : _onGoogleLogin,
-                          ),
-                          const SizedBox(width: 12),
                           SocialButton(
                             label: 'Apple',
                             icon: Icons.apple,

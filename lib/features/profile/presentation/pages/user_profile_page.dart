@@ -94,8 +94,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _pets = pets;
         _loading = false;
       });
-    } catch (e) {
-      print('Error cargando usuario: $e');
+    } catch (_) {
       setState(() => _loading = false);
     }
   }

@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/error/exceptions.dart';
 import '../../domain/entities/auth_user.dart';
 
@@ -285,6 +286,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw ServerException(_getAuthErrorMessage(e.code));
     } catch (e) {
       if (e is ServerException) rethrow;
+      if (e is PlatformException) {
+        if (e.code == 'sign_in_failed') {
+          throw ServerException(
+            'Error de configuración de Google Sign-In en Android. '
+            'Asegúrate de tener el archivo google-services.json y el SHA-1 configurado en Firebase Console.',
+          );
+        }
+        throw ServerException('Error de Google Sign-In: ${e.message ?? e.code}');
+      }
       throw ServerException('Error al iniciar sesión con Google: $e');
     }
   }

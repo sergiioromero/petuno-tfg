@@ -13,7 +13,6 @@ import '../../../../../../features/profile/presentation/bloc/pet/pet_state.dart'
 import '../../../../../../features/profile/domain/entities/pet.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_event.dart';
-import '../../data/datasources/post_remote_datasource.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CreatePostPage extends StatefulWidget {

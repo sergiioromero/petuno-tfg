@@ -23,13 +23,15 @@ class _SearchFiltersBottomSheetState extends State<SearchFiltersBottomSheet> {
   late String _ciudad;
 
   static const List<String> _razas = [
-    'Cualquiera', 'Golden Retriever', 'Bulldog', 'Labrador',
-    'Pastor Alemán', 'Persa', 'Siamés', 'Maine Coon',
+    'Cualquiera', 'Golden Retriever', 'Bulldog Francés', 'Labrador',
+    'Pastor Alemán', 'Caniche', 'Chihuahua', 'Yorkshire',
+    'Persa', 'Siamés', 'Maine Coon', 'Bengalí',
+    'Conejo Enano', 'Cobaya', 'Hámster', 'Periquito',
   ];
 
   static const List<String> _colores = [
     'Cualquiera', 'Marrón', 'Negro', 'Blanco',
-    'Naranja', 'Gris', 'Multicolor',
+    'Naranja', 'Gris', 'Multicolor', 'Crema',
   ];
 
   @override

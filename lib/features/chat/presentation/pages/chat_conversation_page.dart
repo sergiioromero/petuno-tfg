@@ -40,6 +40,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   bool _otherUserTyping = false;
   DateTime? _lastTypingUpdate;
   Timer? _typingTimer;
+  StreamSubscription? _typingSubscription;
 
   @override
   void initState() {
@@ -58,7 +59,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   }
 
   void _listenToTypingStatus() {
-    FirebaseFirestore.instance
+    _typingSubscription = FirebaseFirestore.instance
         .collection('chats')
         .doc(widget.chatId)
         .snapshots()
@@ -105,6 +106,7 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     _messageController.dispose();
     _scrollController.dispose();
     _typingTimer?.cancel();
+    _typingSubscription?.cancel();
     _updateTypingStatus(false);
     super.dispose();
   }
