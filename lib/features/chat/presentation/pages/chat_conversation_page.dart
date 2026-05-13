@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,6 +37,9 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
   final ImagePicker _imagePicker = ImagePicker();
   bool _canSend = false;
   bool _isSendingImage = false;
+  bool _otherUserTyping = false;
+  DateTime? _lastTypingUpdate;
+  Timer? _typingTimer;
 
   @override
   void initState() {
@@ -48,13 +52,60 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
     _messageController.addListener(() {
       final canSend = _messageController.text.trim().isNotEmpty;
       if (canSend != _canSend) setState(() => _canSend = canSend);
+      _onUserTyping();
     });
+    _listenToTypingStatus();
+  }
+
+  void _listenToTypingStatus() {
+    FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!mounted) return;
+      final data = snapshot.data();
+      if (data != null) {
+        final typing = data['typing'] as Map<String, dynamic>?;
+        final otherTyping = typing?[widget.otherUserId] == true;
+        if (otherTyping != _otherUserTyping) {
+          setState(() => _otherUserTyping = otherTyping);
+        }
+      }
+    });
+  }
+
+  void _onUserTyping() {
+    final now = DateTime.now();
+    if (_lastTypingUpdate != null &&
+        now.difference(_lastTypingUpdate!).inMilliseconds < 1500) {
+      _typingTimer?.cancel();
+      _typingTimer = Timer(const Duration(milliseconds: 1500), () {
+        _updateTypingStatus(false);
+      });
+      return;
+    }
+    _lastTypingUpdate = now;
+    _updateTypingStatus(true);
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(milliseconds: 3000), () {
+      _updateTypingStatus(false);
+    });
+  }
+
+  void _updateTypingStatus(bool isTyping) {
+    FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId)
+        .update({'typing.${widget.currentUid}': isTyping});
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _typingTimer?.cancel();
+    _updateTypingStatus(false);
     super.dispose();
   }
 
@@ -121,14 +172,14 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
               ListTile(
                 leading: Icon(Icons.camera_alt_rounded,
                     color: AppTheme.primaryPink),
-                title: Text('Cámara',
+                title: Text('Camara',
                     style: TextStyle(color: AppTheme.textPrimary(context))),
                 onTap: () => Navigator.pop(ctx, ImageSource.camera),
               ),
               ListTile(
                 leading: Icon(Icons.photo_library_rounded,
                     color: AppTheme.primaryPink),
-                title: Text('Galería',
+                title: Text('Galeria',
                     style: TextStyle(color: AppTheme.textPrimary(context))),
                 onTap: () => Navigator.pop(ctx, ImageSource.gallery),
               ),
@@ -228,6 +279,31 @@ class _ChatConversationPageState extends State<ChatConversationPage> {
               },
             ),
           ),
+          if (_otherUserTyping)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              color: AppTheme.backgroundColor(context),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryPink,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${widget.otherUserName} esta escribiendo...',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary(context),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           SafeArea(
             top: false,
             child: _buildInputBar(context),
@@ -491,11 +567,13 @@ class _MessageBubble extends StatelessWidget {
                           imageUrl: message.imageUrl!,
                           time: time,
                           isMe: isMe,
+                          isRead: message.isRead,
                         )
                       : _TextBubble(
                           text: message.text,
                           time: time,
                           isMe: isMe,
+                          isRead: message.isRead,
                         ),
             ),
           ),
@@ -555,11 +633,13 @@ class _TextBubble extends StatelessWidget {
   final String text;
   final String time;
   final bool isMe;
+  final bool isRead;
 
   const _TextBubble({
     required this.text,
     required this.time,
     required this.isMe,
+    required this.isRead,
   });
 
   @override
@@ -600,14 +680,29 @@ class _TextBubble extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: 10,
-              color: isMe
-                  ? Colors.white.withOpacity(0.75)
-                  : AppTheme.textSecondary(context),
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isMe
+                      ? Colors.white.withOpacity(0.75)
+                      : AppTheme.textSecondary(context),
+                ),
+              ),
+              if (isMe) ...[
+                const SizedBox(width: 3),
+                Icon(
+                  isRead ? Icons.done_all_rounded : Icons.done_rounded,
+                  size: 14,
+                  color: isRead
+                      ? const Color(0xFF8EC8FF)
+                      : Colors.white.withOpacity(0.6),
+                ),
+              ],
+            ],
           ),
         ],
       ),
@@ -619,11 +714,13 @@ class _ImageBubble extends StatelessWidget {
   final String imageUrl;
   final String time;
   final bool isMe;
+  final bool isRead;
 
   const _ImageBubble({
     required this.imageUrl,
     required this.time,
     required this.isMe,
+    required this.isRead,
   });
 
   @override
@@ -703,12 +800,27 @@ class _ImageBubble extends StatelessWidget {
                   color: Colors.black.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(
-                  time,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.white,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      time,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.white,
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 3),
+                      Icon(
+                        isRead ? Icons.done_all_rounded : Icons.done_rounded,
+                        size: 12,
+                        color: isRead
+                            ? const Color(0xFF8EC8FF)
+                            : Colors.white.withOpacity(0.6),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),

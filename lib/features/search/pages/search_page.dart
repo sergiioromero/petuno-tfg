@@ -5,6 +5,8 @@ import '../../../../../core/theme/app_theme.dart';
 import '../../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../../../features/profile/presentation/pages/user_profile_page.dart';
+import '../widgets/search_filter_chips.dart';
+import '../widgets/search_filters_bottom_sheet.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -19,6 +21,14 @@ class _SearchPageState extends State<SearchPage> {
   bool _loading = false;
   List<Map<String, dynamic>> _results = [];
   String _currentUid = '';
+  String _selectedPetType = 'Todos';
+  Map<String, dynamic> _filters = {
+    'distance': 10.0,
+    'raza': 'Cualquiera',
+    'color': 'Cualquiera',
+    'ciudad': '',
+  };
+  Map<String, List<String>> _userPetTypes = {}; // uid -> tipos de mascota
 
   @override
   void initState() {
@@ -47,7 +57,7 @@ class _SearchPageState extends State<SearchPage> {
         query = FirebaseFirestore.instance
             .collection('users')
             .where('name', isGreaterThanOrEqualTo: q)
-            .where('name', isLessThan: '${q}z')
+            .where('name', isLessThan: '$q\uf8ff')
             .limit(50);
       } else {
         query = FirebaseFirestore.instance
@@ -57,25 +67,63 @@ class _SearchPageState extends State<SearchPage> {
 
       final snapshot = await query.get();
 
-      final users = snapshot.docs
-          .map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return {
-              'id': data['uid'],
-              'name': data['name'] ?? '',
-              'age': data['age'] ?? 0,
-              'location': data['location'] ?? '',
-              'bio': data['bio'] ?? '',
-              'avatarEmoji': data['avatarEmoji'] ?? '👤',
-              'photoURL': data['photoURL'],
-              'interests': List<String>.from(data['interests'] ?? []),
-            };
-          })
-          .where((u) => u['id'] != _currentUid)
-          .toList();
+      final users = <Map<String, dynamic>>[];
+      final petTypes = <String, List<String>>{};
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final uid = data['uid'] ?? doc.id;
+        
+        // Fetch pet data for each user
+        try {
+          final petsSnap = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('pets')
+              .get();
+          final types = <String>[];
+          for (final pet in petsSnap.docs) {
+            final petData = pet.data();
+            if (petData['type'] != null) {
+              types.add(petData['type'].toString().toLowerCase());
+            } else {
+              // Inferir tipo del emoji
+              final emoji = petData['emoji'] ?? '';
+              if (emoji.contains('🐕') || emoji.contains('🐶')) {
+                types.add('perro');
+              } else if (emoji.contains('🐈') || emoji.contains('🐱')) {
+                types.add('gato');
+              } else if (emoji.contains('🦜') || emoji.contains('🐦')) {
+                types.add('ave');
+              } else if (emoji.contains('🐇') || emoji.contains('🐰')) {
+                types.add('conejo');
+              } else if (emoji.contains('🐠') || emoji.contains('🐟')) {
+                types.add('pez');
+              } else {
+                types.add('otro');
+              }
+            }
+          }
+          petTypes[uid] = types;
+        } catch (_) {
+          petTypes[uid] = [];
+        }
+
+        users.add({
+          'id': uid,
+          'name': data['name'] ?? '',
+          'age': data['age'] ?? 0,
+          'location': data['location'] ?? '',
+          'bio': data['bio'] ?? '',
+          'avatarEmoji': data['avatarEmoji'] ?? '👤',
+          'photoURL': data['photoURL'],
+          'interests': List<String>.from(data['interests'] ?? []),
+        });
+      }
 
       setState(() {
-        _results = users;
+        _results = users.where((u) => u['id'] != _currentUid).toList();
+        _userPetTypes = petTypes;
         _loading = false;
       });
     } catch (_) {
@@ -84,15 +132,60 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   List<Map<String, dynamic>> get _filteredResults {
-    if (_searchQuery.isEmpty) return _results;
-    return _results.where((user) {
-      return (user['name'] as String)
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase()) ||
-          (user['location'] as String)
-              .toLowerCase()
-              .contains(_searchQuery.toLowerCase());
-    }).toList();
+    var filtered = _results;
+    
+    // Filtro por texto
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      filtered = filtered.where((user) {
+        return (user['name'] as String).toLowerCase().contains(q) ||
+            (user['location'] as String).toLowerCase().contains(q);
+      }).toList();
+    }
+
+    // Filtro por tipo de mascota
+    if (_selectedPetType != 'Todos') {
+      final typeMap = {
+        'Perros': 'perro',
+        'Gatos': 'gato',
+        'Aves': 'ave',
+        'Conejos': 'conejo',
+        'Peces': 'pez',
+        'Otros': 'otro',
+      };
+      final targetType = typeMap[_selectedPetType]?.toLowerCase();
+      if (targetType != null) {
+        filtered = filtered.where((user) {
+          final types = _userPetTypes[user['id']] ?? [];
+          return types.contains(targetType);
+        }).toList();
+      }
+    }
+
+    // Filtro por ciudad
+    if (_filters['ciudad'] != null && (_filters['ciudad'] as String).isNotEmpty) {
+      final city = (_filters['ciudad'] as String).toLowerCase();
+      filtered = filtered.where((user) {
+        return (user['location'] as String).toLowerCase().contains(city);
+      }).toList();
+    }
+
+    return filtered;
+  }
+
+  void _showFilters(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SearchFiltersBottomSheet(
+        currentFilters: _filters,
+        onApply: (filters) {
+          setState(() => _filters = filters);
+          if (_results.isEmpty) _fetchUsers();
+        },
+      ),
+    );
   }
 
   @override
@@ -122,54 +215,86 @@ class _SearchPageState extends State<SearchPage> {
 
             const SizedBox(height: 14),
 
-            // Barra de búsqueda
+            // Barra de búsqueda con filtro
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Container(
-                height: 46,
-                decoration: BoxDecoration(
-                  color: AppTheme.cardColor(context),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: AppTheme.borderColor(context)),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (v) {
-                    setState(() => _searchQuery = v);
-                    if (v.length >= 2) {
-                      _fetchUsers(nameQuery: v);
-                    } else if (v.isEmpty) {
-                      _fetchUsers();
-                    }
-                  },
-                  style: TextStyle(color: AppTheme.textPrimary(context)),
-                  decoration: InputDecoration(
-                    hintText: 'Nombre, ubicación...',
-                    hintStyle: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary(context)),
-                    prefixIcon: Icon(Icons.search,
-                        color: AppTheme.textSecondary(context), size: 20),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.close,
-                                size: 18,
-                                color: AppTheme.textSecondary(context)),
-                            onPressed: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchQuery = '';
-                              });
-                              _fetchUsers();
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding:
-                        const EdgeInsets.symmetric(vertical: 13),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardColor(context),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: AppTheme.borderColor(context)),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (v) {
+                          setState(() => _searchQuery = v);
+                          if (v.length >= 2) {
+                            _fetchUsers(nameQuery: v);
+                          } else if (v.isEmpty) {
+                            _fetchUsers();
+                          }
+                        },
+                        style: TextStyle(color: AppTheme.textPrimary(context)),
+                        decoration: InputDecoration(
+                          hintText: 'Nombre, ubicacion...',
+                          hintStyle: TextStyle(
+                              fontSize: 14,
+                              color: AppTheme.textSecondary(context)),
+                          prefixIcon: Icon(Icons.search,
+                              color: AppTheme.textSecondary(context), size: 20),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(Icons.close,
+                                      size: 18,
+                                      color: AppTheme.textSecondary(context)),
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchController.clear();
+                                      _searchQuery = '';
+                                    });
+                                    _fetchUsers();
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Container(
+                    height: 46,
+                    width: 46,
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardColor(context),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppTheme.borderColor(context)),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.filter_list_rounded,
+                          color: AppTheme.textSecondary(context)),
+                      onPressed: () => _showFilters(context),
+                    ),
+                  ),
+                ],
               ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Filter chips
+            SearchFilterChips(
+              selected: _selectedPetType,
+              onSelected: (type) {
+                setState(() => _selectedPetType = type);
+                if (_results.isEmpty) _fetchUsers();
+              },
             ),
 
             const SizedBox(height: 16),

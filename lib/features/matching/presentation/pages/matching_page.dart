@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -166,6 +167,7 @@ class _MatchingPageState extends State<MatchingPage>
 
   void _onDragEnd(DragEndDetails details) {
     if (_dragOffset.dx.abs() > 120) {
+      HapticFeedback.mediumImpact();
       _animateRemoval(_dragOffset.dx > 0);
     } else {
       setState(() {

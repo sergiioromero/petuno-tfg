@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:petuno_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:petuno_app/features/auth/presentation/bloc/auth_event.dart';
+import 'package:petuno_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:petuno_app/features/welcome/presentation/pages/welcome_page.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -434,12 +435,35 @@ class SettingsPage extends StatelessWidget {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
+    final emailController = TextEditingController();
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Eliminar cuenta'),
-        content: const Text(
-          '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '¿Estás seguro? Esta acción eliminará todos tus datos '
+              'incluyendo mascotas, posts, matches y conversaciones.',
+              style: TextStyle(fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Para confirmar, escribe tu email:',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                hintText: 'email@ejemplo.com',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -448,13 +472,21 @@ class SettingsPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              Navigator.pop(dialogContext);
-              context.read<AuthBloc>().add(AuthLogoutRequested());
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                    builder: (_) => const WelcomePage()),
-                (route) => false,
-              );
+              final authState = context.read<AuthBloc>().state;
+              final currentEmail = authState is AuthAuthenticated
+                  ? authState.user.email
+                  : '';
+              if (emailController.text.trim() == currentEmail) {
+                Navigator.pop(dialogContext);
+                context.read<AuthBloc>().add(AuthDeleteAccountRequested());
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('El email no coincide con tu cuenta'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
             },
             child: const Text('Eliminar',
                 style: TextStyle(color: Colors.redAccent)),

@@ -41,9 +41,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onGoogleLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-In próximamente')),
-    );
+    context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
   }
 
   void _onAppleLogin() {
@@ -53,8 +51,54 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onForgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Recuperación de contraseña próximamente')),
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      _showPasswordResetDialog();
+    } else {
+      context.read<AuthBloc>().add(AuthPasswordResetRequested(email: email));
+    }
+  }
+
+  void _showPasswordResetDialog() {
+    final controller = TextEditingController(text: _emailController.text.trim());
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Recuperar contraseña'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Introduce tu email para recibir un enlace de recuperación'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'tucorreo@email.com',
+                prefixIcon: Icon(Icons.email_outlined),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final email = controller.text.trim();
+              if (email.isNotEmpty && email.contains('@')) {
+                Navigator.pop(ctx);
+                context.read<AuthBloc>().add(AuthPasswordResetRequested(email: email));
+              }
+            },
+            child: const Text('Enviar',
+                style: TextStyle(color: Color(0xFFFF80CC))),
+          ),
+        ],
+      ),
     );
   }
 
@@ -70,6 +114,13 @@ class _LoginPageState extends State<LoginPage> {
               context,
               MaterialPageRoute(builder: (_) => const MainNavigation()),
               (route) => false,
+            );
+          } else if (state is AuthPasswordResetSent) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Email de recuperación enviado. Revisa tu bandeja de entrada.'),
+                backgroundColor: Colors.green,
+              ),
             );
           } else if (state is AuthError) {
             // Mostrar error

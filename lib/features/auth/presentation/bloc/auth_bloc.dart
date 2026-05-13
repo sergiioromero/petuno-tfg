@@ -1,9 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/usecases/usecase.dart';
+import '../../domain/usecases/delete_account.dart';
 import '../../domain/usecases/get_current_user.dart';
 import '../../domain/usecases/login.dart';
 import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/register.dart';
+import '../../domain/usecases/send_password_reset_email.dart';
+import '../../domain/usecases/sign_in_with_google.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
@@ -12,17 +15,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final Login login;
   final Register register;
   final Logout logout;
+  final SendPasswordResetEmail sendPasswordResetEmail;
+  final DeleteAccount deleteAccount;
+  final SignInWithGoogle signInWithGoogle;
 
   AuthBloc({
     required this.getCurrentUser,
     required this.login,
     required this.register,
     required this.logout,
+    required this.sendPasswordResetEmail,
+    required this.deleteAccount,
+    required this.signInWithGoogle,
   }) : super(AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onAuthLoginRequested);
     on<AuthRegisterRequested>(_onAuthRegisterRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
+    on<AuthPasswordResetRequested>(_onAuthPasswordResetRequested);
+    on<AuthDeleteAccountRequested>(_onAuthDeleteAccountRequested);
+    on<AuthGoogleSignInRequested>(_onAuthGoogleSignInRequested);
   }
 
   Future<void> _onAuthCheckRequested(
@@ -92,6 +104,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold(
       (failure) => emit(AuthError(failure.message)),
       (_) => emit(AuthUnauthenticated()),
+    );
+  }
+
+  Future<void> _onAuthPasswordResetRequested(
+    AuthPasswordResetRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+
+    final result = await sendPasswordResetEmail(event.email);
+
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(AuthPasswordResetSent()),
+    );
+  }
+
+  Future<void> _onAuthDeleteAccountRequested(
+    AuthDeleteAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+
+    final result = await deleteAccount(NoParams());
+
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(AuthUnauthenticated()),
+    );
+  }
+
+  Future<void> _onAuthGoogleSignInRequested(
+    AuthGoogleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+
+    final result = await signInWithGoogle(NoParams());
+
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (user) => emit(AuthAuthenticated(user)),
     );
   }
 }

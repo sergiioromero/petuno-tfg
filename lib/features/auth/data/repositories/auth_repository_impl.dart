@@ -51,6 +51,42 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Either<Failure, void>> sendPasswordResetEmail(String email) async {
+    try {
+      await remoteDataSource.sendPasswordResetEmail(email);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Error inesperado: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteAccount() async {
+    try {
+      await remoteDataSource.deleteAccount();
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Error inesperado: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, AuthUser>> signInWithGoogle() async {
+    try {
+      final user = await remoteDataSource.signInWithGoogle();
+      return Right(user);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Error inesperado: $e'));
+    }
+  }
+
+  @override
   Future<Either<Failure, void>> logout() async {
     try {
       await remoteDataSource.logout();

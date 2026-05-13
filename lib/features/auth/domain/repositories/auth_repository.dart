@@ -19,5 +19,11 @@ abstract class AuthRepository {
 
   Future<Either<Failure, AuthUser?>> getCurrentUser();
 
+  Future<Either<Failure, void>> sendPasswordResetEmail(String email);
+
+  Future<Either<Failure, void>> deleteAccount();
+
+  Future<Either<Failure, AuthUser>> signInWithGoogle();
+
   Stream<AuthUser?> get authStateChanges;
 }

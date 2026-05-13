@@ -247,6 +247,18 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     }
   }
 
+  Future<void> updateTypingStatus({
+    required String chatId,
+    required String uid,
+    required bool isTyping,
+  }) async {
+    try {
+      await firestore.collection('chats').doc(chatId).update({
+        'typing.$uid': isTyping,
+      });
+    } catch (_) {}
+  }
+
   @override
   Future<void> deleteMessage({
     required String chatId,

@@ -6,6 +6,7 @@ import 'package:petuno_app/features/chat/data/repositories/chat_repository_impl.
 import 'package:petuno_app/features/chat/presentation/bloc/chat_bloc.dart';
 import 'package:petuno_app/features/chat/presentation/bloc/chat_event.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -48,6 +49,9 @@ import 'features/auth/domain/usecases/get_current_user.dart';
 import 'features/auth/domain/usecases/login.dart';
 import 'features/auth/domain/usecases/register.dart';
 import 'features/auth/domain/usecases/logout.dart';
+import 'features/auth/domain/usecases/send_password_reset_email.dart';
+import 'features/auth/domain/usecases/delete_account.dart';
+import 'features/auth/domain/usecases/sign_in_with_google.dart';
 
 // Auth - Presentacion
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -56,6 +60,7 @@ import 'features/auth/presentation/bloc/auth_state.dart';
 
 // Paginas
 import 'features/welcome/presentation/pages/welcome_page.dart';
+import 'features/welcome/presentation/pages/onboarding_page.dart';
 
 import 'features/home/data/datasources/post_remote_datasource.dart';
 import 'features/home/presentation/bloc/post_bloc.dart';
@@ -98,6 +103,9 @@ class PetunoApp extends StatelessWidget {
                 login: Login(authRepository),
                 register: Register(authRepository),
                 logout: Logout(authRepository),
+                sendPasswordResetEmail: SendPasswordResetEmail(authRepository),
+                deleteAccount: DeleteAccount(authRepository),
+                signInWithGoogle: SignInWithGoogle(authRepository),
               )..add(AuthCheckRequested());
             },
           ),
@@ -183,17 +191,53 @@ class PetunoAppView extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool _checkingOnboarding = true;
+  bool _onboardingCompleted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOnboarding();
+  }
+
+  Future<void> _checkOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    final completed = prefs.getBool('onboarding_completed') ?? false;
+    if (mounted) {
+      setState(() {
+        _onboardingCompleted = completed;
+        _checkingOnboarding = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_checkingOnboarding) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, authState) {
         if (authState is AuthUnauthenticated) {
           context.read<ChatBloc>().add(StopAllStreams());
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const WelcomePage()),
+            MaterialPageRoute(
+              builder: (_) => _onboardingCompleted
+                  ? const WelcomePage()
+                  : const OnboardingPage(),
+            ),
             (route) => false,
           );
         } else if (authState is AuthAuthenticated) {
@@ -209,7 +253,9 @@ class AuthWrapper extends StatelessWidget {
           } else if (authState is AuthAuthenticated) {
             return const MainNavigation();
           } else {
-            return const WelcomePage();
+            return _onboardingCompleted
+                ? const WelcomePage()
+                : const OnboardingPage();
           }
         },
       ),

@@ -79,9 +79,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void _onGoogleSignUp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Google Sign-In próximamente')),
-    );
+    context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
   }
 
   void _onAppleSignUp() {
