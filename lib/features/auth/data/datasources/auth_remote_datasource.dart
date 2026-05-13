@@ -94,6 +94,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw ServerException(_getAuthErrorMessage(e.code));
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Error al registrar usuario: $e');
     }
   }
@@ -123,6 +124,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw ServerException(_getAuthErrorMessage(e.code));
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Error al iniciar sesión: $e');
     }
   }
@@ -134,6 +136,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on firebase_auth.FirebaseAuthException catch (e) {
       throw ServerException(_getAuthErrorMessage(e.code));
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Error al enviar email de recuperación: $e');
     }
   }
@@ -222,6 +225,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       throw ServerException(_getAuthErrorMessage(e.code));
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Error al eliminar cuenta: $e');
     }
   }
@@ -280,6 +284,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
       throw ServerException(_getAuthErrorMessage(e.code));
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Error al iniciar sesión con Google: $e');
     }
   }
@@ -310,6 +315,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       await _googleSignIn.signOut();
       await firebaseAuth.signOut();
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Error al cerrar sesión: $e');
     }
   }
@@ -327,6 +333,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         photoURL: user.photoURL,
       );
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw ServerException('Error al obtener usuario actual: $e');
     }
   }

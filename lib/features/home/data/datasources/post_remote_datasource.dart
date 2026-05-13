@@ -1,10 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/comment_model.dart';
 import '../models/post_model.dart';
 
 abstract class PostRemoteDataSource {
   Future<List<PostModel>> getPosts();
   Future<void> toggleLike(String postId, String uid);
   Future<void> deletePost(String postId);
+  Stream<List<CommentModel>> watchComments(String postId);
+  Future<void> addComment(String postId, String uid, String userName,
+      String? userPhotoURL, String text);
+  Future<void> deleteComment(String postId, String commentId);
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -38,7 +43,6 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     }
     await ref.update({'likedBy': likedBy, 'likes': likedBy.length});
 
-    // Notificación solo al dar like y si no es el propio post
     if (isLiking && postOwnerId.isNotEmpty && postOwnerId != uid) {
       try {
         final senderDoc =
@@ -66,5 +70,72 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   @override
   Future<void> deletePost(String postId) async {
     await firestore.collection('posts').doc(postId).delete();
+  }
+
+  @override
+  Stream<List<CommentModel>> watchComments(String postId) {
+    return firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.map((d) => CommentModel.fromFirestore(d, postId)).toList());
+  }
+
+  @override
+  Future<void> addComment(String postId, String uid, String userName,
+      String? userPhotoURL, String text) async {
+    final batch = firestore.batch();
+    final commentRef = firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc();
+    batch.set(commentRef, {
+      'uid': uid,
+      'userName': userName,
+      'userPhotoURL': userPhotoURL,
+      'text': text,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(firestore.collection('posts').doc(postId), {
+      'comments': FieldValue.increment(1),
+    });
+    await batch.commit();
+
+    final postDoc = await firestore.collection('posts').doc(postId).get();
+    final postOwnerId = postDoc.data()?['uid'] as String? ?? '';
+    if (postOwnerId.isNotEmpty && postOwnerId != uid) {
+      try {
+        await firestore
+            .collection('notifications')
+            .doc(postOwnerId)
+            .collection('items')
+            .add({
+          'type': 'comment',
+          'fromName': userName,
+          'fromPhotoURL': userPhotoURL,
+          'message': 'comentó en tu publicación',
+          'createdAt': FieldValue.serverTimestamp(),
+          'isRead': false,
+        });
+      } catch (_) {}
+    }
+  }
+
+  @override
+  Future<void> deleteComment(String postId, String commentId) async {
+    final batch = firestore.batch();
+    batch.delete(firestore
+        .collection('posts')
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId));
+    batch.update(firestore.collection('posts').doc(postId), {
+      'comments': FieldValue.increment(-1),
+    });
+    await batch.commit();
   }
 }

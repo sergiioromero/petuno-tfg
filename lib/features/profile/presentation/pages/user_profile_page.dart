@@ -58,6 +58,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
               .get(),
         targetRef.collection('followers').count().get(),
         targetRef.collection('following').count().get(),
+        targetRef.collection('pets').get(),
       ]);
 
       final query = futures[0] as QuerySnapshot;
@@ -77,6 +78,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
       final followersSnap = futures[offset] as AggregateQuerySnapshot;
       final followingSnap = futures[offset + 1] as AggregateQuerySnapshot;
 
+      final petsSnap = futures.last as QuerySnapshot;
+      final pets = petsSnap.docs.map((doc) {
+        final d = doc.data() as Map<String, dynamic>;
+        return {'id': doc.id, ...d};
+      }).toList();
+
       final data = userDoc.data() as Map<String, dynamic>;
       data['followersCount'] = followersSnap.count ?? 0;
       data['followingCount'] = followingSnap.count ?? 0;
@@ -84,6 +91,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       setState(() {
         _userData = {'id': userDoc.id, ...data};
         _isFollowing = alreadyFollowing;
+        _pets = pets;
         _loading = false;
       });
     } catch (e) {

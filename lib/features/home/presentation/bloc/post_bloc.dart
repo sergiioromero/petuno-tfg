@@ -11,6 +11,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<LoadPosts>(_onLoadPosts);
     on<ToggleLikePost>(_onToggleLike);
     on<DeletePost>(_onDeletePost);
+    on<AddComment>(_onAddComment);
+    on<DeleteComment>(_onDeleteComment);
   }
 
   Future<void> _onLoadPosts(LoadPosts event, Emitter<PostState> emit) async {
@@ -66,7 +68,76 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     final updated = current.where((p) => p.id != event.postId).toList();
     emit(PostsLoaded(updated));
 
-    // Borrar en Firestore
     await dataSource.deletePost(event.postId);
+  }
+
+  Future<void> _onAddComment(
+      AddComment event, Emitter<PostState> emit) async {
+    if (state is! PostsLoaded) return;
+    final current = (state as PostsLoaded).posts;
+
+    final updated = current.map((p) {
+      if (p.id != event.postId) return p;
+      return PostModel(
+        id: p.id,
+        uid: p.uid,
+        userName: p.userName,
+        avatarEmoji: p.avatarEmoji,
+        userPhotoURL: p.userPhotoURL,
+        petName: p.petName,
+        petBreed: p.petBreed,
+        petEmoji: p.petEmoji,
+        bgColor: p.bgColor,
+        petPhotoURL: p.petPhotoURL,
+        photoURLs: p.photoURLs,
+        description: p.description,
+        tags: p.tags,
+        likes: p.likes,
+        likedBy: p.likedBy,
+        comments: p.comments + 1,
+        createdAt: p.createdAt,
+      );
+    }).toList();
+
+    emit(PostsLoaded(updated));
+    await dataSource.addComment(
+      event.postId,
+      event.uid,
+      event.userName,
+      event.userPhotoURL,
+      event.text,
+    );
+  }
+
+  Future<void> _onDeleteComment(
+      DeleteComment event, Emitter<PostState> emit) async {
+    if (state is! PostsLoaded) return;
+    final current = (state as PostsLoaded).posts;
+
+    final updated = current.map((p) {
+      if (p.id != event.postId) return p;
+      return PostModel(
+        id: p.id,
+        uid: p.uid,
+        userName: p.userName,
+        avatarEmoji: p.avatarEmoji,
+        userPhotoURL: p.userPhotoURL,
+        petName: p.petName,
+        petBreed: p.petBreed,
+        petEmoji: p.petEmoji,
+        bgColor: p.bgColor,
+        petPhotoURL: p.petPhotoURL,
+        photoURLs: p.photoURLs,
+        description: p.description,
+        tags: p.tags,
+        likes: p.likes,
+        likedBy: p.likedBy,
+        comments: p.comments > 0 ? p.comments - 1 : 0,
+        createdAt: p.createdAt,
+      );
+    }).toList();
+
+    emit(PostsLoaded(updated));
+    await dataSource.deleteComment(event.postId, event.commentId);
   }
 }

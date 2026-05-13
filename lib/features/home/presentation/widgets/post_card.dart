@@ -6,6 +6,7 @@ import '../../../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../bloc/post_bloc.dart';
 import '../bloc/post_event.dart';
 import '../../data/models/post_model.dart';
+import '../pages/post_detail_page.dart';
 
 class PostCard extends StatefulWidget {
   final PostModel post;
@@ -390,8 +391,19 @@ class _PostCardState extends State<PostCard>
                               fontWeight: FontWeight.w600,
                               color: Colors.white)),
                       const SizedBox(width: 16),
-                      const Icon(Icons.chat_bubble_outline,
-                          color: Colors.white, size: 22),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<PostBloc>(),
+                              child: PostDetailPage(post: widget.post),
+                            ),
+                          ),
+                        ),
+                        child: const Icon(Icons.chat_bubble_outline,
+                            color: Colors.white, size: 22),
+                      ),
                       const SizedBox(width: 5),
                       Text('${widget.post.comments}',
                           style: const TextStyle(
@@ -696,8 +708,22 @@ class _PhotoLightboxState extends State<_PhotoLightbox>
                               fontWeight: FontWeight.w600,
                               color: Colors.white)),
                       const SizedBox(width: 18),
-                      const Icon(Icons.chat_bubble_outline,
-                          color: Colors.white, size: 24),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BlocProvider.value(
+                                value: context.read<PostBloc>(),
+                                child: PostDetailPage(post: widget.post),
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.chat_bubble_outline,
+                            color: Colors.white, size: 24),
+                      ),
                       const SizedBox(width: 6),
                       Text('${post.comments}',
                           style: const TextStyle(
