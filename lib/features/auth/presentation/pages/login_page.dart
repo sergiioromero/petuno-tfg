@@ -1,12 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/main_navigation.dart';
-import '../../../../firebase_options.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -610,18 +606,9 @@ class _ResetResultDialog extends StatelessWidget {
   }
 }
 
-class _DirectLinkDialog extends StatefulWidget {
+class _DirectLinkDialog extends StatelessWidget {
   final String email;
   const _DirectLinkDialog({required this.email});
-
-  @override
-  State<_DirectLinkDialog> createState() => _DirectLinkDialogState();
-}
-
-class _DirectLinkDialogState extends State<_DirectLinkDialog> {
-  bool _loading = false;
-  String? _link;
-  String? _error;
 
   @override
   Widget build(BuildContext context) {
@@ -636,200 +623,74 @@ class _DirectLinkDialogState extends State<_DirectLinkDialog> {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: _link != null
-                    ? Colors.green.withOpacity(0.1)
-                    : AppTheme.primaryPink.withOpacity(0.1),
+                color: Colors.orange.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                _link != null
-                    ? Icons.check_circle
-                    : _error != null
-                        ? Icons.error_outline
-                        : Icons.link_rounded,
-                color: _link != null
-                    ? Colors.green
-                    : _error != null
-                        ? Colors.red
-                        : AppTheme.primaryPink,
-                size: 28,
-              ),
+              child: const Icon(Icons.email_outlined,
+                  color: Colors.orange, size: 28),
             ),
             const SizedBox(height: 20),
-            Text(
-              _link != null
-                  ? 'Enlace generado'
-                  : _error != null
-                      ? 'Error'
-                      : 'Obtener enlace directo',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
+            const Text(
+              '¿No recibiste el email?',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '1. Revisa la carpeta de spam\n'
+              '2. Verifica que el email esté bien escrito\n'
+              '3. Prueba con otro email',
+              textAlign: TextAlign.start,
+              style: TextStyle(fontSize: 14, height: 1.6),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Para que los emails lleguen, en Firebase Console:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Authentication → Settings → desactivar\n'
+                    '"Email enumeration protection"',
+                    style: TextStyle(fontSize: 12, height: 1.5),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            if (_link != null) ...[
-              Text(
-                'Copia el enlace y pégalo en tu navegador para restablecer la contraseña.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  _link!,
-                  style: const TextStyle(fontSize: 12),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ] else if (_error != null) ...[
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.red),
-              ),
-            ] else ...[
-              Text(
-                'Generaremos un enlace para restablecer tu contraseña.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-            ],
             const SizedBox(height: 24),
-            if (_link != null)
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: _link!));
-                    AppSnackBar.show(
-                      context,
-                      'Enlace copiado al portapapeles',
-                      type: SnackBarType.success,
-                    );
-                  },
-                  icon: const Icon(Icons.copy_rounded, size: 20),
-                  label: const Text('Copiar enlace',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryPink,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryPink,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  elevation: 0,
                 ),
+                child: const Text('Entendido',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               ),
-            if (_error != null)
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _error = null;
-                      _link = null;
-                    });
-                    _generateLink();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryPink,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text('Reintentar',
-                      style:
-                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                ),
-              ),
-            if (_link == null && _error == null)
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _generateLink,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryPink,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _loading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text('Generar enlace',
-                          style: TextStyle(
-                              fontSize: 15, fontWeight: FontWeight.w700)),
-                ),
-              ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cerrar',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14)),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _generateLink() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    try {
-      final apiKey = DefaultFirebaseOptions.currentPlatform.apiKey;
-      final url = 'https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=$apiKey';
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'requestType': 'PASSWORD_RESET',
-          'email': widget.email,
-          'returnOobLink': true,
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['oobLink'] != null) {
-        setState(() => _link = data['oobLink']);
-      } else {
-        final error = data['error']?['message'] ?? 'EMAIL_NOT_FOUND';
-        if (error == 'EMAIL_NOT_FOUND') {
-          setState(() => _error = 'Este email no está registrado');
-        } else {
-          setState(() => _error = 'Error al generar el enlace. Intenta de nuevo.');
-        }
-      }
-    } catch (e) {
-      setState(() => _error = 'Error de conexión. Verifica tu internet.');
-    } finally {
-      setState(() => _loading = false);
-    }
   }
 }
