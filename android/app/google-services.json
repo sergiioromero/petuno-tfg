@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "577436340001-b1v9m3j5o5jmop8mhcp1ekri51dj93ig.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.petuno",
+            "certificate_hash": "eba2e10fb71bd688884df188ef01370e2ee42642"
+          }
+        },
+        {
           "client_id": "577436340001-fpd9ppsdiua9ehvnfe6phq2qm1348md9.apps.googleusercontent.com",
           "client_type": 3
         }
