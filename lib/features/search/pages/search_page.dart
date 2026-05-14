@@ -23,12 +23,11 @@ class _SearchPageState extends State<SearchPage> {
   String _currentUid = '';
   String _selectedPetType = 'Todos';
   Map<String, dynamic> _filters = {
-    'distance': 10.0,
     'raza': 'Cualquiera',
-    'color': 'Cualquiera',
     'ciudad': '',
   };
   Map<String, List<String>> _userPetTypes = {}; // uid -> tipos de mascota
+  Map<String, List<String>> _userBreeds = {};   // uid -> razas de mascota
 
   @override
   void initState() {
@@ -69,6 +68,7 @@ class _SearchPageState extends State<SearchPage> {
 
       final users = <Map<String, dynamic>>[];
       final petTypes = <String, List<String>>{};
+      final breeds = <String, List<String>>{};
 
       for (final doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
@@ -82,8 +82,10 @@ class _SearchPageState extends State<SearchPage> {
               .collection('pets')
               .get();
           final types = <String>[];
+          final userBreeds = <String>[];
           for (final pet in petsSnap.docs) {
             final petData = pet.data();
+            userBreeds.add(petData['breed'] ?? '');
             if (petData['type'] != null) {
               types.add(petData['type'].toString().toLowerCase());
             } else {
@@ -105,8 +107,10 @@ class _SearchPageState extends State<SearchPage> {
             }
           }
           petTypes[uid] = types;
+          breeds[uid] = userBreeds;
         } catch (_) {
           petTypes[uid] = [];
+          breeds[uid] = [];
         }
 
         users.add({
@@ -124,6 +128,7 @@ class _SearchPageState extends State<SearchPage> {
       setState(() {
         _results = users.where((u) => u['id'] != _currentUid).toList();
         _userPetTypes = petTypes;
+        _userBreeds = breeds;
         _loading = false;
       });
     } catch (_) {
@@ -160,6 +165,15 @@ class _SearchPageState extends State<SearchPage> {
           return types.contains(targetType);
         }).toList();
       }
+    }
+
+    // Filtro por raza
+    if (_filters['raza'] != null && _filters['raza'] != 'Cualquiera') {
+      final targetBreed = (_filters['raza'] as String).toLowerCase();
+      filtered = filtered.where((user) {
+        final userBreeds = _userBreeds[user['id']] ?? [];
+        return userBreeds.any((b) => b.toLowerCase().contains(targetBreed));
+      }).toList();
     }
 
     // Filtro por ciudad

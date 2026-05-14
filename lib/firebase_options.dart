@@ -57,7 +57,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBTaX91sUNvV91As1VAKZ4WZaEJw6AN8iA',
-    appId: '1:577436340001:android:e6ca1c8f69a3e7c1973860',
+    appId: '1:577436340001:android:e6b1f907a7b624bc973860',
     messagingSenderId: '577436340001',
     projectId: 'petuno-app-origin',
     storageBucket: 'petuno-app-origin.firebasestorage.app',

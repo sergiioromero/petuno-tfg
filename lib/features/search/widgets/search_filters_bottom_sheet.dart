@@ -17,9 +17,7 @@ class SearchFiltersBottomSheet extends StatefulWidget {
 }
 
 class _SearchFiltersBottomSheetState extends State<SearchFiltersBottomSheet> {
-  late double _distance;
   late String _raza;
-  late String _color;
   late String _ciudad;
 
   static const List<String> _razas = [
@@ -29,17 +27,10 @@ class _SearchFiltersBottomSheetState extends State<SearchFiltersBottomSheet> {
     'Conejo Enano', 'Cobaya', 'Hámster', 'Periquito',
   ];
 
-  static const List<String> _colores = [
-    'Cualquiera', 'Marrón', 'Negro', 'Blanco',
-    'Naranja', 'Gris', 'Multicolor', 'Crema',
-  ];
-
   @override
   void initState() {
     super.initState();
-    _distance = widget.currentFilters['distance'] ?? 10.0;
     _raza = widget.currentFilters['raza'] ?? 'Cualquiera';
-    _color = widget.currentFilters['color'] ?? 'Cualquiera';
     _ciudad = widget.currentFilters['ciudad'] ?? '';
   }
 
@@ -84,9 +75,7 @@ class _SearchFiltersBottomSheetState extends State<SearchFiltersBottomSheet> {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    _distance = 10.0;
                     _raza = 'Cualquiera';
-                    _color = 'Cualquiera';
                     _ciudad = '';
                   });
                 },
@@ -104,57 +93,9 @@ class _SearchFiltersBottomSheetState extends State<SearchFiltersBottomSheet> {
 
           const SizedBox(height: 24),
 
-          // Distancia
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Distancia máxima',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF333333),
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryPink.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '${_distance.round()} km',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.primaryPink,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Slider(
-            value: _distance,
-            min: 1,
-            max: 100,
-            divisions: 99,
-            activeColor: AppTheme.primaryPink,
-            inactiveColor: AppTheme.primaryPink.withOpacity(0.15),
-            onChanged: (v) => setState(() => _distance = v),
-          ),
-
-          const SizedBox(height: 8),
-
           // Raza
           _buildDropdown('Raza', _razas, _raza,
               (v) => setState(() => _raza = v!)),
-
-          const SizedBox(height: 16),
-
-          // Color
-          _buildDropdown('Color', _colores, _color,
-              (v) => setState(() => _color = v!)),
 
           const SizedBox(height: 16),
 
@@ -205,9 +146,7 @@ class _SearchFiltersBottomSheetState extends State<SearchFiltersBottomSheet> {
             child: ElevatedButton(
               onPressed: () {
                 widget.onApply({
-                  'distance': _distance,
                   'raza': _raza,
-                  'color': _color,
                   'ciudad': _ciudad,
                 });
                 Navigator.pop(context);
