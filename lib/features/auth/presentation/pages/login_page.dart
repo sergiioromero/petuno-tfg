@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/main_navigation.dart';
+import '../../../../firebase_options.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -45,8 +49,15 @@ class _LoginPageState extends State<LoginPage> {
     if (email.isEmpty || !email.contains('@')) {
       _showPasswordResetDialog();
     } else {
-      context.read<AuthBloc>().add(AuthPasswordResetRequested(email: email));
+      _showResetOptionsDialog(email);
     }
+  }
+
+  void _showResetOptionsDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _ResetOptionsDialog(email: email, bloc: context.read<AuthBloc>()),
+    );
   }
 
   void _showPasswordResetDialog() {
@@ -148,6 +159,13 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  void _showResetResultDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (ctx) => _ResetResultDialog(email: email),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,12 +180,8 @@ class _LoginPageState extends State<LoginPage> {
               (route) => false,
             );
           } else if (state is AuthPasswordResetSent) {
-            AppSnackBar.show(
-              context,
-              'Email enviado. Si no aparece, revisa spam o verifica que el email esté registrado.',
-              type: SnackBarType.success,
-              duration: const Duration(seconds: 6),
-            );
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            _showResetResultDialog(state.email);
           } else if (state is AuthError) {
             AppSnackBar.show(context, state.message, type: SnackBarType.error);
           }
@@ -373,5 +387,391 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
     );
+  }
+}
+
+class _ResetOptionsDialog extends StatelessWidget {
+  final String email;
+  final AuthBloc bloc;
+  const _ResetOptionsDialog({required this.email, required this.bloc});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryPink.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.lock_reset_rounded,
+                  color: AppTheme.primaryPink, size: 28),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Recuperar contraseña',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Se enviará un enlace de recuperación a:',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Color(0xFF888888)),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF9F9F9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                email,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  bloc.add(AuthPasswordResetRequested(email: email));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryPink,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Enviar enlace',
+                    style:
+                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Color(0xFF888888), fontSize: 14)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ResetResultDialog extends StatelessWidget {
+  final String email;
+  const _ResetResultDialog({required this.email});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle, color: Colors.green, size: 28),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Email enviado',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Revisa tu bandeja de entrada.\nSi no aparece, comprueba la carpeta de spam.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => _DirectLinkDialog(email: email),
+                  );
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryPink,
+                  side: const BorderSide(color: AppTheme.primaryPink),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: const Text(
+                  'No recibí el email',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryPink,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Entendido',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DirectLinkDialog extends StatefulWidget {
+  final String email;
+  const _DirectLinkDialog({required this.email});
+
+  @override
+  State<_DirectLinkDialog> createState() => _DirectLinkDialogState();
+}
+
+class _DirectLinkDialogState extends State<_DirectLinkDialog> {
+  bool _loading = false;
+  String? _link;
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: _link != null
+                    ? Colors.green.withOpacity(0.1)
+                    : AppTheme.primaryPink.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _link != null
+                    ? Icons.check_circle
+                    : _error != null
+                        ? Icons.error_outline
+                        : Icons.link_rounded,
+                color: _link != null
+                    ? Colors.green
+                    : _error != null
+                        ? Colors.red
+                        : AppTheme.primaryPink,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              _link != null
+                  ? 'Enlace generado'
+                  : _error != null
+                      ? 'Error'
+                      : 'Obtener enlace directo',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (_link != null) ...[
+              Text(
+                'Copia el enlace y pégalo en tu navegador para restablecer la contraseña.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _link!,
+                  style: const TextStyle(fontSize: 12),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ] else if (_error != null) ...[
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.red),
+              ),
+            ] else ...[
+              Text(
+                'Generaremos un enlace para restablecer tu contraseña.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+            ],
+            const SizedBox(height: 24),
+            if (_link != null)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: _link!));
+                    AppSnackBar.show(
+                      context,
+                      'Enlace copiado al portapapeles',
+                      type: SnackBarType.success,
+                    );
+                  },
+                  icon: const Icon(Icons.copy_rounded, size: 20),
+                  label: const Text('Copiar enlace',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryPink,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            if (_error != null)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _error = null;
+                      _link = null;
+                    });
+                    _generateLink();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryPink,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text('Reintentar',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            if (_link == null && _error == null)
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _generateLink,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryPink,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Generar enlace',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cerrar',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _generateLink() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final projectId = DefaultFirebaseOptions.currentPlatform.projectId;
+      final url = 'https://us-central1-$projectId.cloudfunctions.net/generateResetLink';
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': widget.email}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() => _link = data['link']);
+      } else {
+        final data = jsonDecode(response.body);
+        setState(() => _error = data['error'] ?? 'Error al generar el enlace');
+      }
+    } catch (e) {
+      setState(() => _error = 'Error de conexión. Verifica tu internet.');
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 }
