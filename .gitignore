@@ -102,7 +102,6 @@ assets/logo_petuno.jpeg
 .env
 *.key
 *.pem
-google-services.json
 GoogleService-Info.plist
 firestore.key
 *.jks
