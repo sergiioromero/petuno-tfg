@@ -597,6 +597,9 @@ class _PetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final photos = (pet['photos'] as List<dynamic>?) ?? [];
+    final hasPhoto = photos.isNotEmpty && photos[0] is String && (photos[0] as String).isNotEmpty;
+
     return Container(
       width: 110,
       decoration: BoxDecoration(
@@ -604,28 +607,63 @@ class _PetChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.borderColor(context)),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(pet['emoji'] ?? '🐾', style: const TextStyle(fontSize: 36)),
-          const SizedBox(height: 8),
-          Text(
-            pet['name'] ?? '',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          children: [
+            Expanded(
+              child: hasPhoto
+                  ? Image.network(
+                      photos[0] as String,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Text(pet['emoji'] ?? '🐾',
+                            style: const TextStyle(fontSize: 36)),
+                      ),
+                    )
+                  : Center(
+                      child: Text(pet['emoji'] ?? '🐾',
+                          style: const TextStyle(fontSize: 36)),
+                    ),
             ),
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            pet['breed'] ?? pet['type'] ?? '',
-            style: TextStyle(
-                fontSize: 11, color: AppTheme.textSecondary(context)),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.6),
+                  ],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pet['name'] ?? '',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    pet['breed'] ?? pet['type'] ?? '',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white.withOpacity(0.85)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

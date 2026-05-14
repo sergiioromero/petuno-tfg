@@ -6,7 +6,6 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/auth_text_field.dart';
-import '../widgets/social_button.dart';
 import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -78,12 +77,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  void _onAppleSignUp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Apple Sign-In próximamente')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,19 +136,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
 
                       const SizedBox(height: 32),
-
-                      Row(
-                        children: [
-                          SocialButton(
-                            label: 'Apple',
-                            icon: Icons.apple,
-                            iconColor: Colors.black,
-                            onTap: isLoading ? () {} : _onAppleSignUp,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 28),
 
                       Row(
                         children: [

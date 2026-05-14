@@ -6,7 +6,6 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../widgets/auth_text_field.dart';
-import '../widgets/social_button.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -38,12 +37,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           );
     }
-  }
-
-  void _onAppleLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Apple Sign-In próximamente')),
-    );
   }
 
   void _onForgotPassword() {
@@ -168,20 +161,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
 
                       const SizedBox(height: 32),
-
-                      // Login social
-                      Row(
-                        children: [
-                          SocialButton(
-                            label: 'Apple',
-                            icon: Icons.apple,
-                            iconColor: Colors.black,
-                            onTap: isLoading ? () {} : _onAppleLogin,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 28),
 
                       // Separador "o"
                       Row(
