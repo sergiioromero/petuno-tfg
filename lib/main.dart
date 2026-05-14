@@ -11,6 +11,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:petuno_app/core/services/cloudinary_service.dart';
+import 'package:petuno_app/core/services/push_notification_service.dart';
 
 // Core
 import 'core/theme/app_theme.dart';
@@ -72,6 +73,8 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await PushNotificationService.initialize();
 
   runApp(const PetunoApp());
 }
