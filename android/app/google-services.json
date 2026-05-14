@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "577436340001-6lap033dfld0tmdr6v7v0h1eiv3hnjmk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.petuno",
+            "certificate_hash": "27346ae046d0f45c75f82d640a2e03d23545ad6c"
+          }
+        },
+        {
           "client_id": "577436340001-79cvr82oam784r4maq5mccc5f7fu5ru1.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
