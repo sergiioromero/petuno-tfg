@@ -752,21 +752,29 @@ class _DirectLinkDialogState extends State<_DirectLinkDialog> {
     });
 
     try {
-      final projectId = DefaultFirebaseOptions.currentPlatform.projectId;
-      final url = 'https://us-central1-$projectId.cloudfunctions.net/generateResetLink';
+      final apiKey = DefaultFirebaseOptions.currentPlatform.apiKey;
+      final url = 'https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=$apiKey';
 
       final response = await http.post(
         Uri.parse(url),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': widget.email}),
+        body: jsonEncode({
+          'requestType': 'PASSWORD_RESET',
+          'email': widget.email,
+          'returnOobLink': true,
+        }),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() => _link = data['link']);
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['oobLink'] != null) {
+        setState(() => _link = data['oobLink']);
       } else {
-        final data = jsonDecode(response.body);
-        setState(() => _error = data['error'] ?? 'Error al generar el enlace');
+        final error = data['error']?['message'] ?? 'EMAIL_NOT_FOUND';
+        if (error == 'EMAIL_NOT_FOUND') {
+          setState(() => _error = 'Este email no está registrado');
+        } else {
+          setState(() => _error = 'Error al generar el enlace. Intenta de nuevo.');
+        }
       }
     } catch (e) {
       setState(() => _error = 'Error de conexión. Verifica tu internet.');

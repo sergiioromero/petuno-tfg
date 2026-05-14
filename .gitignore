@@ -104,10 +104,12 @@ assets/logo_petuno.jpeg
 *.pem
 google-services.json
 GoogleService-Info.plist
-firebase.json
 firestore.key
 *.jks
 *.keystore
+
+# ===== FIREBASE FUNCTIONS =====
+functions/node_modules/
 
 # ===== TEMP =====
 *.tmp
