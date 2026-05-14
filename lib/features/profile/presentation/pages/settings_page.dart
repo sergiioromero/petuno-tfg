@@ -3,6 +3,7 @@ import 'package:petuno_app/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:petuno_app/features/auth/presentation/bloc/auth_event.dart';
 import 'package:petuno_app/features/auth/presentation/bloc/auth_state.dart';
 import 'package:petuno_app/features/welcome/presentation/pages/welcome_page.dart';
+import 'package:petuno_app/core/widgets/app_snackbar.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/providers/theme_provider.dart';
@@ -480,11 +481,10 @@ class SettingsPage extends StatelessWidget {
                 Navigator.pop(dialogContext);
                 context.read<AuthBloc>().add(AuthDeleteAccountRequested());
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('El email no coincide con tu cuenta'),
-                    backgroundColor: Colors.redAccent,
-                  ),
+                AppSnackBar.show(
+                  context,
+                  'El email no coincide con tu cuenta',
+                  type: SnackBarType.error,
                 );
               }
             },

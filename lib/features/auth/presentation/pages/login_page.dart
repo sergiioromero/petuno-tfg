@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/widgets/main_navigation.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -52,41 +53,97 @@ class _LoginPageState extends State<LoginPage> {
     final controller = TextEditingController(text: _emailController.text.trim());
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Recuperar contraseña'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Introduce tu email para recibir un enlace de recuperación'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'tucorreo@email.com',
-                prefixIcon: Icon(Icons.email_outlined),
-                border: OutlineInputBorder(),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryPink.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.lock_reset_rounded,
+                    color: AppTheme.primaryPink, size: 28),
               ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-          ],
+              const SizedBox(height: 20),
+              const Text(
+                'Recuperar contraseña',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Introduce tu email para recibir un enlace de recuperación',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'tucorreo@email.com',
+                  prefixIcon:
+                      const Icon(Icons.email_outlined, color: Color(0xFF888888)),
+                  filled: true,
+                  fillColor: const Color(0xFFF9F9F9),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        const BorderSide(color: AppTheme.primaryPink, width: 1.5),
+                  ),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final email = controller.text.trim();
+                    if (email.isNotEmpty && email.contains('@')) {
+                      Navigator.pop(ctx);
+                      context
+                          .read<AuthBloc>()
+                          .add(AuthPasswordResetRequested(email: email));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryPink,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text('Enviar enlace',
+                      style: TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Cancelar',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14)),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              final email = controller.text.trim();
-              if (email.isNotEmpty && email.contains('@')) {
-                Navigator.pop(ctx);
-                context.read<AuthBloc>().add(AuthPasswordResetRequested(email: email));
-              }
-            },
-            child: const Text('Enviar',
-                style: TextStyle(color: Color(0xFFFF80CC))),
-          ),
-        ],
       ),
     );
   }
@@ -105,20 +162,14 @@ class _LoginPageState extends State<LoginPage> {
               (route) => false,
             );
           } else if (state is AuthPasswordResetSent) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Email de recuperación enviado. Revisa tu bandeja de entrada.'),
-                backgroundColor: Colors.green,
-              ),
+            AppSnackBar.show(
+              context,
+              'Email enviado. Si no aparece, revisa spam o verifica que el email esté registrado.',
+              type: SnackBarType.success,
+              duration: const Duration(seconds: 6),
             );
           } else if (state is AuthError) {
-            // Mostrar error
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
+            AppSnackBar.show(context, state.message, type: SnackBarType.error);
           }
         },
         child: SafeArea(

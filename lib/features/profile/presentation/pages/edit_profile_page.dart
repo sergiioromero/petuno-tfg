@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../domain/entities/user.dart';
 import '../bloc/profile/profile_bloc.dart';
 import '../bloc/profile/profile_event.dart';
@@ -180,14 +181,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state is ProfileError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${state.message}')),
+            AppSnackBar.show(
+              context,
+              'Error: ${state.message}',
+              type: SnackBarType.error,
             );
           }
           if (state is ProfileLoaded && _localPhotoPath != null) {
-            // La foto se subió correctamente
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Foto de perfil actualizada ✓')),
+            AppSnackBar.show(
+              context,
+              'Foto de perfil actualizada',
+              type: SnackBarType.success,
             );
             setState(() => _localPhotoPath = null);
           }

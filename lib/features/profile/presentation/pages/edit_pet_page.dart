@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:petuno_app/core/services/cloudinary_service.dart';
 import 'package:petuno_app/features/profile/presentation/widgets/image_picker_widget.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../domain/entities/pet.dart';
 import '../bloc/pet/pet_bloc.dart';
 import '../bloc/pet/pet_event.dart';
@@ -74,8 +75,10 @@ class _EditPetPageState extends State<EditPetPage> {
     if (_formKey.currentState!.validate()) {
       final uid = _getUid(context);
       if (uid == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: no se pudo obtener el usuario')),
+        AppSnackBar.show(
+          context,
+          'Error: no se pudo obtener el usuario',
+          type: SnackBarType.error,
         );
         return;
       }
@@ -123,9 +126,11 @@ class _EditPetPageState extends State<EditPetPage> {
         Navigator.pop(context); // Cerrar loading
         Navigator.pop(context); // Volver atrás
       } catch (e) {
-        Navigator.pop(context); // Cerrar loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al subir imágenes: $e')),
+        Navigator.pop(context);
+        AppSnackBar.show(
+          context,
+          'Error al subir imágenes: $e',
+          type: SnackBarType.error,
         );
       }
     }

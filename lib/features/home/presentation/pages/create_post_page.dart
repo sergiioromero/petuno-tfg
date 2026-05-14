@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/services/cloudinary_service.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
@@ -49,8 +50,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _publish() async {
     if (_descController.text.trim().isEmpty && _selectedImages.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Añade una foto o descripción')),
+      AppSnackBar.show(
+        context,
+        'Añade una foto o descripción',
+        type: SnackBarType.info,
       );
       return;
     }
@@ -123,8 +126,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al publicar: $e')),
+        AppSnackBar.show(
+          context,
+          'Error al publicar: $e',
+          type: SnackBarType.error,
         );
       }
     } finally {
