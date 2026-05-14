@@ -117,7 +117,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     result.fold(
       (failure) => emit(AuthError(failure.message)),
-      (_) => emit(AuthPasswordResetSent()),
+      (_) => emit(AuthPasswordResetSent(event.email)),
     );
   }
 
